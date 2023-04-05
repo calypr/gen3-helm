@@ -49,14 +49,12 @@ global:
   publicDataSets: true
   # -- (string) Access level for tiers. acceptable values for `tier_access_level` are: `libre`, `regular` and `private`. If omitted, by default common will be treated as `private`.
   tierAccessLevel: libre
-  # -- (map) Controls network policy settings
-  netPolicy:
-    enabled: false
+  # -- (bool) Whether network policies are enabled.
+  netPolicy: true
   # -- (int) Number of dispatcher jobs.
   dispatcherJobNum: 10
-
-# -- (bool) Whether Metrics are enabled.
-metricsEnabled: false
+  # -- (bool) Whether Datadog is enabled.
+  ddEnabled: false
 
 # -- (int) Number of replicas for the deployment.
 replicaCount: 1
@@ -68,7 +66,7 @@ image:
   # -- (string) Docker pull policy.
   pullPolicy: Always
   # -- (string) Overrides the image tag whose default is the chart appVersion.
-  tag: "develop"
+  tag: "PXP-10877"
 
 # -- (list) Docker image pull secrets.
 imagePullSecrets: []
@@ -93,13 +91,11 @@ serviceAccount:
 podAnnotations: {}
 
 # -- (map) Security context to apply to the pod
-podSecurityContext:
-  {}
+podSecurityContext: {}
   # fsGroup: 2000
 
 # -- (map) Security context to apply to the container
-securityContext:
-  {}
+securityContext: {}
   # capabilities:
   #   drop:
   #   - ALL
@@ -112,7 +108,7 @@ service:
   # -- (string) Type of service. Valid values are "ClusterIP", "NodePort", "LoadBalancer", "ExternalName".
   type: ClusterIP
   # -- (int) The port number that the service exposes.
-  port: 80
+  port: 3000
 
 # -- (map) Configuration for autoscaling the number of replicas
 autoscaling:
@@ -125,11 +121,6 @@ autoscaling:
   # -- (int) The target CPU utilization percentage for autoscaling
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
-
-port: 3000
-
-# -- (list) List of environment variables to add to the deployment.
-env: []
 
 # -- (map) Node selector to apply to the pod
 nodeSelector: {}
@@ -154,20 +145,20 @@ affinity:
   podAntiAffinity:
     # -- (map) Option for scheduling to be required or preferred.
     preferredDuringSchedulingIgnoredDuringExecution:
-      # -- (int) Weight value for preferred scheduling.
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-              # -- (list) Label key for match expression.
-              - key: app
-                # -- (string) Operation type for the match expression.
-                operator: In
-                # -- (list) Value for the match expression key.
-                values:
-                  - frontend-framework
-          # -- (string) Value for topology key label.
-          topologyKey: "kubernetes.io/hostname"
+    # -- (int) Weight value for preferred scheduling.
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          # -- (list) Label key for match expression.
+          - key: app
+            # -- (string) Operation type for the match expression.
+            operator: In
+            # -- (list) Value for the match expression key.
+            values:
+            - frontend-framework
+        # -- (string) Value for topology key label.
+        topologyKey: "kubernetes.io/hostname"
 
 # -- (bool) Automount the default service account token
 automountServiceAccountToken: false
@@ -177,13 +168,12 @@ resources:
   # -- (map) The amount of resources that the container requests
   requests:
     # -- (string) The amount of CPU requested
-    cpu: 0.6
+    cpu: 1.0
     # -- (string) The amount of memory requested
-    memory: 512Mi
+    memory: 4096Mi
   # -- (map) The maximum amount of resources that the container is allowed to use
   limits:
     # -- (string) The maximum amount of memory the container can use
-    cpu: 0.6
     memory: 4096Mi
 
 # Values to determine the labels that are used for the deployment, pod, etc.
@@ -197,3 +187,11 @@ partOf: "Front-End"
 selectorLabels:
 # -- (map) Will completely override the commonLabels defined in the common chart's _label_setup.tpl
 commonLabels:
+
+# Values to configure datadog if ddEnabled is set to "true".
+# -- (bool) If enabled, the Datadog Agent will automatically inject Datadog-specific metadata into your application logs.
+datadogLogsInjection: true
+# -- (bool) If enabled, the Datadog Agent will collect profiling data for your application using the Continuous Profiler. This data can be used to identify performance bottlenecks and optimize your application.
+datadogProfilingEnabled: true
+# -- (int) A value between 0 and 1, that represents the percentage of requests that will be traced. For example, a value of 0.5 means that 50% of requests will be traced.
+datadogTraceSampleRate: 1
