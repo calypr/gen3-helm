@@ -12,6 +12,7 @@ spec:
     matchLabels:
       {{- include "frontend-framework.selectorLabels" . | nindent 6 }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+
   strategy:
     {{- toYaml .Values.strategy | nindent 8 }}
   template:
@@ -46,37 +47,27 @@ spec:
           #   failureThreshold: 30
           readinessProbe:
             httpGet:
-              path: /ff
-              port: 3000
+              path: /
+              port: 80
             initialDelaySeconds: 30
             periodSeconds: 60
             timeoutSeconds: 30
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           ports:
-            - containerPort: 3000
-          # command:
-          #   - /bin/bash
-          #   - ./dockerStart.sh
+            - containerPort: 80
+              name: http
+              protocol: TCP
           env:
             {{- if .Values.global.ddEnabled }}
             {{- include "common.datadogEnvVar" . | nindent 12 }}
             {{- end }}
             - name: HOSTNAME
               value: revproxy-service
-            - name: BASE_PATH
-              value: /ff
             # disable npm 7's brand new update notifier to prevent Portal from stuck at starting up
             # see https://github.com/npm/cli/issues/3163
             - name: NPM_CONFIG_UPDATE_NOTIFIER
               value: "false"
-            - name: NODE_ENV
-              value: "production"
-            - name: APP
-              value: {{ .Values.frontendFrameworkApp | quote }}
-            - name: GEN3_BUNDLE
-              # optional: true
-              value: ""
 #needed to be adjusted to use the gen3 umbrella chart or local var ^ 
 #adding a var in helpers.tpl for later- Elise
              {{- with .Values.datadogApplicationId  }}      
