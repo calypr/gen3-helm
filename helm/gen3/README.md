@@ -73,7 +73,7 @@ Helm chart to deploy Gen3 Data Commons
 | frontend-framework.image | map | `{"repository":null,"tag":null}` | Docker image information. |
 | frontend-framework.image.repository | string | `nil` | The Docker image repository for the guppy service. |
 | frontend-framework.image.tag | string | `nil` | Overrides the image tag whose default is the chart appVersion. |
-| global | map | `{"aws":{"account":{"aws_access_key_id":null,"aws_secret_access_key":null},"enabled":false},"ddEnabled":false,"dev":true,"dictionaryUrl":"https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json","dispatcherJobNum":10,"environment":"default","gcp":true,"hostname":"localhost","kubeBucket":"kube-gen3","logsBucket":"logs-gen3","netPolicy":true,"portalApp":"gitops","postgres":{"dbCreate":true,"master":{"host":null,"password":null,"port":"5432","username":"postgres"}},"publicDataSets":true,"revproxyArn":"arn:aws:acm:us-east-1:123456:certificate","syncFromDbgap":false,"tierAccessLevel":"libre","tls":{"cert":null,"key":null},"userYamlS3Path":"s3://cdis-gen3-users/test/user.yaml"}` | Global configuration options. |
+| global | map | `{"aws":{"account":{"aws_access_key_id":null,"aws_secret_access_key":null},"enabled":false},"ddEnabled":false,"dev":true,"dictionaryUrl":"https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json","dispatcherJobNum":10,"environment":"default","frontendRoot":"gen3ff","gcp":true,"hostname":"localhost","kubeBucket":"kube-gen3","logsBucket":"logs-gen3","netPolicy":true,"portalApp":"gitops","postgres":{"dbCreate":true,"master":{"host":null,"password":null,"port":"5432","username":"postgres"}},"publicDataSets":true,"revproxyArn":"arn:aws:acm:us-east-1:123456:certificate","syncFromDbgap":false,"tierAccessLevel":"libre","tls":{"cert":null,"key":null},"userYamlS3Path":"s3://cdis-gen3-users/test/user.yaml"}` | Global configuration options. |
 | global.aws.account | map | `{"aws_access_key_id":null,"aws_secret_access_key":null}` | Credentials for AWS |
 | global.aws.enabled | bool | `false` | Set to true if deploying to AWS. Controls ingress annotations. |
 | global.aws.region | string | `"us-east-1"` | AWS region for this deployment |
@@ -86,12 +86,10 @@ Helm chart to deploy Gen3 Data Commons
 | global.aws.useLocalSecret.localSecretName | string | `nil` | Name of the local secret. |
 | global.dev | bool | `true` | Deploys postgres/elasticsearch for dev |
 | global.dictionaryUrl | string | `"https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json"` | URL of the data dictionary. |
-| global.dispatcherJobNum | int | `"10"` | Number of dispatcher jobs. |
-| global.environment | string | `"default"` | Environment name. This should be the same as vpcname if you're doing an AWS deployment. Currently this is being used to share ALB's if you have multiple namespaces in same cluster. |
-| global.externalSecrets | map | `{"dbCreate":false,"deploy":false}` | External Secrets settings. |
-| global.externalSecrets.dbCreate | bool | `false` | Will create the databases and store the creds in Kubernetes Secrets even if externalSecrets is deployed. Useful if you want to use ExternalSecrets for other secrets besides db secrets. |
-| global.externalSecrets.deploy | bool | `false` | Will use ExternalSecret resources to pull secrets from Secrets Manager instead of creating them locally. Be cautious as this will override secrets you have deployed. |
-| global.frontendRoot | string | `"portal"` | Which app will be served on /. Needs be set to portal for portal, or "gen3ff" for frontendframework. |
+| global.dispatcherJobNum | int | `10` | Number of dispatcher jobs. |
+| global.environment | string | `"default"` | Environment name. This should be the same as vpcname if you're doing an AWS deployment. Currently this is being used to share ALB's if you have multiple namespaces. Might be used other places too. |
+| global.frontendRoot | string | `"gen3ff"` | which frontend to use "portal" or "gen3ff" |
+| global.gcp | map | `true` | AWS configuration |
 | global.hostname | string | `"localhost"` | Hostname for the deployment. |
 | global.manifestGlobalExtraValues | map | `{}` | If you would like to add any extra values to the manifest-global configmap. |
 | global.netPolicy | bool | `{"dbSubnet":"","enabled":false}` | Global flags to control and manage network policies for a Gen3 installation NOTE: Network policies are currently a beta feature. Use with caution! |
