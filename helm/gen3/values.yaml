@@ -4,8 +4,11 @@
 
 # Global configuration
 global:
-
+  
   # -- (map) AWS configuration
+  dbRestoreBucket: aced-development
+  dbRestorePath: meta_graph_load.py
+
   aws:
     # -- (string) AWS region for this deployment
     region: us-east-1
