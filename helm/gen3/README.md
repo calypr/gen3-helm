@@ -1,6 +1,6 @@
 # gen3
 
-![Version: 0.1.63](https://img.shields.io/badge/Version-0.1.63-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
+![Version: 0.1.19](https://img.shields.io/badge/Version-0.1.19-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
 
 Helm chart to deploy Gen3 Data Commons
 
@@ -18,31 +18,28 @@ Helm chart to deploy Gen3 Data Commons
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../ambassador | ambassador | 0.1.17 |
-| file://../arborist | arborist | 0.1.15 |
-| file://../argo-wrapper | argo-wrapper | 0.1.11 |
-| file://../audit | audit | 0.1.17 |
-| file://../aws-es-proxy | aws-es-proxy | 0.1.14 |
-| file://../cohort-middleware | cohort-middleware | 0.1.1 |
-| file://../common | common | 0.1.16 |
-| file://../etl | etl | 0.1.10 |
-| file://../fence | fence | 0.1.31 |
-| file://../frontend-framework | frontend-framework | 0.1.6 |
-| file://../gen3-network-policies | gen3-network-policies | 0.1.2 |
-| file://../guppy | guppy | 0.1.18 |
-| file://../hatchery | hatchery | 0.1.13 |
-| file://../indexd | indexd | 0.1.19 |
-| file://../manifestservice | manifestservice | 0.1.19 |
-| file://../metadata | metadata | 0.1.18 |
-| file://../neuvector | neuvector | 0.1.2 |
-| file://../peregrine | peregrine | 0.1.19 |
-| file://../portal | portal | 0.1.27 |
-| file://../requestor | requestor | 0.1.17 |
-| file://../revproxy | revproxy | 0.1.23 |
-| file://../sheepdog | sheepdog | 0.1.21 |
-| file://../sower | sower | 0.1.18 |
-| file://../ssjdispatcher | ssjdispatcher | 0.1.19 |
-| file://../wts | wts | 0.1.19 |
+| file://../ambassador | ambassador | 0.1.8 |
+| file://../arborist | arborist | 0.1.8 |
+| file://../argo-wrapper | argo-wrapper | 0.1.4 |
+| file://../audit | audit | 0.1.9 |
+| file://../aws-es-proxy | aws-es-proxy | 0.1.6 |
+| file://../common | common | 0.1.7 |
+| file://../elasticsearch | elasticsearch | 0.1.5 |
+| file://../fence | fence | 0.1.13 |
+| file://../guppy | guppy | 0.1.8 |
+| file://../hatchery | hatchery | 0.1.6 |
+| file://../indexd | indexd | 0.1.10 |
+| file://../manifestservice | manifestservice | 0.1.10 |
+| file://../metadata | metadata | 0.1.8 |
+| file://../peregrine | peregrine | 0.1.9 |
+| file://../pidgin | pidgin | 0.1.7 |
+| file://../portal | portal | 0.1.7 |
+| file://../requestor | requestor | 0.1.8 |
+| file://../revproxy | revproxy | 0.1.10 |
+| file://../sheepdog | sheepdog | 0.1.10 |
+| file://../sower | sower | 0.1.6 |
+| file://../ssjdispatcher | ssjdispatcher | 0.1.6 |
+| file://../wts | wts | 0.1.10 |
 | https://charts.bitnami.com/bitnami | postgresql | 11.9.13 |
 | https://helm.elastic.co | elasticsearch | 7.10.2 |
 
