@@ -101,15 +101,14 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: global.dev
 
-  # (optional) NeuVector Kubernetes Security Policy templates to protect Gen3
-  #   NeuVector must be installed separately.
-  #   Reference: https://open-docs.neuvector.com/basics/overview
-  #   Reference: https://github.com/neuvector/neuvector-helm
-  # For more information, please use the Gen3 community Slack.
-  - name: neuvector
-    version: "0.1.2"
-    repository: "file://../neuvector"
-    condition: neuvector.enabled
+- name: elasticsearch
+  version: 7.17.3
+  repository: "https://helm.elastic.co"
+  condition: global.dev
+- name: postgresql
+  version: 11.9.13
+  repository: "https://charts.bitnami.com/bitnami"
+  condition: global.dev
 
 # A chart can be either an 'application' or a 'library' chart.
 #
