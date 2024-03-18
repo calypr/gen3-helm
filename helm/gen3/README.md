@@ -26,7 +26,7 @@ Helm chart to deploy Gen3 Data Commons
 | file://../common | common | 0.1.9 |
 | file://../etl | etl | 0.1.0 |
 | file://../fence | fence | 0.1.16 |
-| file://../frontend-framework | frontend-framework | 0.10.0 |
+| file://../frontend-framework | frontend-framework | 0.1.1 |
 | file://../guppy | guppy | 0.1.10 |
 | file://../hatchery | hatchery | 0.1.8 |
 | file://../indexd | indexd | 0.1.13 |
@@ -34,7 +34,7 @@ Helm chart to deploy Gen3 Data Commons
 | file://../metadata | metadata | 0.1.10 |
 | file://../peregrine | peregrine | 0.1.11 |
 | file://../pidgin | pidgin | 0.1.9 |
-| file://../portal | portal | 0.1.9 |
+| file://../portal | portal | 0.1.10 |
 | file://../requestor | requestor | 0.1.10 |
 | file://../revproxy | revproxy | 0.1.13 |
 | file://../sheepdog | sheepdog | 0.1.12 |
