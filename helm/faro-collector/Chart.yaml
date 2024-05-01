@@ -25,6 +25,6 @@ appVersion: "master"
 
 # Dependencies
 dependencies:
-  - name: alloy
-    version: "0.9.1"
-    repository: "https://grafana.github.io/helm-charts"
+- name: common
+  version: 0.1.10
+  repository: file://../common
