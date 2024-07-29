@@ -5,6 +5,7 @@ metadata:
 data:
   guppy_config.json: |
       {
+        "allowRefresh": {{ .Values.allowRefresh }},
         "indices": {{ .Values.indices  | toJson }},
         "config_index": {{ .Values.configIndex | toJson }},
         "auth_filter_field": {{ .Values.authFilterField | quote }},
