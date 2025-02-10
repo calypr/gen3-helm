@@ -70,7 +70,7 @@ dependencies:
 - name: mongodb
   version: "16.0.3"
   repository: "file://../mongodb"
-  condition: mongodb.enabled
+  condition: mongodb.disabled
 - name: portal
   version: 0.1.13
   repository: "file://../portal"

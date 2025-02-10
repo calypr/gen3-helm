@@ -19,7 +19,7 @@ spec:
           - "-c"
           - |
             echo "Waiting for the grip service to be available..."
-            until curl -s --head --request GET http://{{ .Values.serviceName }}:8201/graphql/_status | grep "200 OK" > /dev/null; do
+            until curl -s --head --request GET http://{{ .Values.serviceName }}:8201/writer/_status | grep "200 OK" > /dev/null; do
               echo "Grip service not ready, retrying in 5 seconds..."
               sleep 5
             done

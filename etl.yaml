@@ -11,10 +11,6 @@ spec:
       configMap:
         name: gen3-credentials
 
-    - name: sheepdog-dbcreds
-      secret:
-        secretName: sheepdog-dbcreds
-
     - name: useryaml
       configMap:
         name: useryaml
@@ -29,17 +25,13 @@ spec:
 
   containers:
     - name: container-configmap
-      image: quay.io/ohsu-comp-bio/aced-etl:feature_grip
+      image: quay.io/ohsu-comp-bio/aced-etl:feature_submission-error-handling
       imagePullPolicy: Always
       volumeMounts:
         # Gen3 credentials file
         - name: gen3-credentials
           mountPath: /creds/credentials.json
           subPath: credentials.json
-
-        # Sheepdog creds, secrets defined in helm/sheepdog/templates/deployment.yaml
-        - name: sheepdog-dbcreds
-          mountPath: /creds/sheepdog-creds
 
         # User yaml, configmap defined in helm/fence/templates/useryaml-job.yaml
         - name: useryaml
@@ -60,14 +52,6 @@ spec:
         - |
           # Until we fix in helm env, setup well known postgres env variables
           # TODO - set GLOBAL_HOSTNAME to value from values.yaml
-          cat  << EOF >> ~/.bashrc
-          export PGDB=`cat /creds/sheepdog-creds/database`
-          export PGPASSWORD=`cat /creds/sheepdog-creds/password`
-          export PGUSER=`cat /creds/sheepdog-creds/username`
-          export PGHOST=`cat /creds/sheepdog-creds/host`
-          export DBREADY=`cat /creds/sheepdog-creds/dbcreated`
-          export PGPORT=`cat /creds/sheepdog-creds/port`
-          EOF
 
           # link back to mounted volumes
           ln -s /studies /data_model/studies

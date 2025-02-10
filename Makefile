@@ -6,7 +6,7 @@ update: ## Update from the local helm chart repository
 local: DEPLOY=local
 local: local-context deploy ## Deploy the Local commons
 local-context: change-context # Change to the Local context
-local local-context: CONTEXT=rancher-desktop
+local local-context: CONTEXT=kind-kind-multi-node
 
 development: DEPLOY=development
 development: development-context deploy ## Deploy the Development commons
@@ -104,6 +104,7 @@ deploy: check-context check-secrets
 	@echo "Deploying $(DEPLOY)"
 	@if [ "$(DEPLOY)" = "local" ]; then \
 		helm upgrade --install $(DEPLOY) ./helm/gen3 \
+		--set controller.allowSnippetAnnotations=true \
 		-f Secrets/values.yaml \
 		-f Secrets/user.yaml \
 		-f Secrets/fence-config.yaml \

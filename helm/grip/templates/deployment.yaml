@@ -31,6 +31,9 @@ spec:
         - name: mongo-config-volume
           configMap:
             name: grip-values
+        - name: pebble
+          persistentVolumeClaim:
+            claimName: pebble
       initContainers:
         - name: wait-for-mongodb
           image: busybox:1.35
@@ -44,6 +47,7 @@ spec:
                 sleep 5
               done
               echo "MongoDB is running"
+
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -55,29 +59,39 @@ spec:
             mountPath: /data/mongo.yml
             subPath: mongoConfig
             readOnly: true
+          - name: pebble
+            mountPath: /data
+
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
-            httpGet:
-              path: /graphql/_status
-              port: 8201
+            exec:
+              command:
+                - ls
+                - /home
             initialDelaySeconds: 10
             periodSeconds: 60
             timeoutSeconds: 30
+
           readinessProbe:
-            httpGet:
-              path: /graphql/_status
-              port: 8201
+            exec:
+              command:
+                - ls
+                - /home
             initialDelaySeconds: 10
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           command:
             - "/bin/sh"
             - "-c"
-            - >
-              grip server -c mongo.yml -w graphql=gen3_writer.so -w reader=grip-graphql-endpoint.so -l reader:config=./config/gen3.js -l reader:graph=CALIPER
+            - |
+              while true; do
+                sleep 86400;
+              done
+              # grip server -d pebble -w writer=gen3_writer.so -w graphql=gql-gen.so -l graphql:graph=CALIPER -w reader=grip-graphql-endpoint.so -l reader:config=./config/gen3.js -l reader:graph=CALIPER
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
