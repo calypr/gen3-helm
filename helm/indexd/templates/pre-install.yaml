@@ -81,7 +81,9 @@ spec:
             - "-c"
             # Script always succeeds if it runs (echo exits with 0)
             # indexd image does not include jq, so use python 
+            # TODO: revert source activate after resolution with upstream
             - |
+              source .venv/bin/activate
               echo 'python /indexd/bin/index_admin.py create --username "fence" --password "${FENCE_PASS}'
               python /indexd/bin/index_admin.py create --username "fence" --password "${FENCE_PASS}"
               echo 'python /indexd/bin/index_admin.py create --username "sheepdog" --password "${SHEEPDOG_PASS}'
