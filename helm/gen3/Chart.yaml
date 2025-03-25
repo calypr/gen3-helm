@@ -43,6 +43,10 @@ dependencies:
   version: 0.1.0
   repository: "file://../fhir-server"
   condition: fhir-server.enabled
+- name: gecko
+  version: "0.1.0"
+  repository: "file://../gecko"
+  condition: gecko.enabled
 - name: grip
   version: "0.1.0"
   repository: "file://../grip"
