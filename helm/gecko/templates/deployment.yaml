@@ -39,11 +39,13 @@ spec:
               containerPort: 80
               protocol: TCP
           livenessProbe:
-            exec:
-              command: ["true"]
+            httpGet:
+              path: /health
+              port: 80
           readinessProbe:
-            exec:
-              command: ["true"]
+            httpGet:
+              path: /health
+              port: 80
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           command: ["sh"]
@@ -52,10 +54,10 @@ spec:
             - |
               set -e
               # set env vars
-              export PGSSLMODE="disable"
-              until false; do
-                sleep 5
-              done
+              #until false; do
+              #  sleep 5
+              # done
+              ./bin/gecko
 
           env:
             {{- toYaml .Values.env | nindent 12 }}
