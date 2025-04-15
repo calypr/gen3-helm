@@ -63,6 +63,10 @@ dependencies:
   version: 0.1.14
   repository: "file://../indexd"
   condition: indexd.enabled
+- name: kafka
+  version: 32.1.3
+  repository: "file://../kafka"
+  condition: kafka.enabled
 - name: metadata
   version: 0.1.12
   repository: "file://../metadata"
