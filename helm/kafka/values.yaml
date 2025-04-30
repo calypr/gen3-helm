@@ -11,6 +11,7 @@
 ## @param global.defaultStorageClass Global default StorageClass for Persistent Volume(s)
 ##
 global:
+  enabled: false
   imageRegistry: ""
   ## E.g.
   ## imagePullSecrets:

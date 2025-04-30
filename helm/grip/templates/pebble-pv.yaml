@@ -14,7 +14,7 @@ spec:
   storageClassName: ""  # Leave empty if not using a storage class
   volumeMode: Filesystem
   capacity:
-    storage: 50Gi
+    storage: {{ .Values.persistence.capacity | default "50Gi" }}
   accessModes:
     - ReadWriteOnce
   claimRef:
