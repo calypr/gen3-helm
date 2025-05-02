@@ -1672,7 +1672,7 @@ service:
       ##
       labels: {}
     ## @param service.headless.ipFamilies IP families for the headless service
-    ## 
+    ##
     ipFamilies: []
     ## @param service.headless.ipFamilyPolicy IP family policy for the headless service
     ##
@@ -2107,7 +2107,7 @@ metrics:
         prometheus.io/path: "/metrics"
       ## @param metrics.jmx.service.ipFamilies IP families for the jmx metrics service
       ##
-      ipFamilies: [] 
+      ipFamilies: []
       ## @param metrics.jmx.service.ipFamilyPolicy IP family policy for the jmx metrics service
       ##
       ipFamilyPolicy: ""
