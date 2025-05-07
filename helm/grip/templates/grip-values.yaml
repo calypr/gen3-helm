@@ -4,3 +4,4 @@ metadata:
   name: grip-values
 data:
   serviceName: {{ .Values.serviceName | quote }}
+  graphName: {{ .Values.graphName | quote}}
