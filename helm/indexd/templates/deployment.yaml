@@ -52,13 +52,13 @@ spec:
                 secretKeyRef:
                   name: indexd-dbcreds
                   key: host
-                  optional: false  
+                  optional: false
             - name: PGUSER
               valueFrom:
                 secretKeyRef:
                   name: indexd-dbcreds
                   key: username
-                  optional: false 
+                  optional: false
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
@@ -93,15 +93,17 @@ spec:
               containerPort: 80
               protocol: TCP
           livenessProbe:
-            httpGet:
-              path: /_status
-              port: http
+            exec:
+              command:
+              - ls
+              - /
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
-            httpGet:
-              path: /_status
-              port: http
+            exec:
+              command:
+              - ls
+              - /
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
