@@ -93,17 +93,15 @@ spec:
               containerPort: 80
               protocol: TCP
           livenessProbe:
-            exec:
-              command:
-              - ls
-              - /
+            httpGet:
+              path: /_status
+              port: http
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
-            exec:
-              command:
-              - ls
-              - /
+            httpGet:
+              path: /_status
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
