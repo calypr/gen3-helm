@@ -61,6 +61,16 @@ spec:
 
           env:
             {{- toYaml .Values.env | nindent 12 }}
+            - name: QDRANT_HOST
+              value: {{ printf "%s-qdrant" .Release.Name | quote }}
+            - name: QDRANT_PORT
+              value: "6334"
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{  "qdrant-api-key-secret" }}
+                  key: {{  "api-key" }}
+                  optional: false
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
