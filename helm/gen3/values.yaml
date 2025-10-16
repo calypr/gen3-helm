@@ -310,7 +310,7 @@ qdrant:
       memory: 256Mi
   persistence:
     enabled: true
-    storageClass: "standard"
+    storageClass: "qdrant-manual-storage"
     size: 26Gi
     accessModes:
       - ReadWriteOnce
