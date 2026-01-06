@@ -297,7 +297,7 @@ qdrant:
     - name: QDRANT__SERVICE__API_KEY
       valueFrom:
         secretKeyRef:
-          name: qdrant-api-key-secret # Name of the Kubernetes Secret from Step 1
+          name: qdrant-api-key-secret  # Name of the Kubernetes Secret from Step 1
           key: api-key
   enabled: true
   replicaCount: 1
