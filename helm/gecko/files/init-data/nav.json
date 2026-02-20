@@ -67,24 +67,10 @@
         "perms": null
       },
       {
-        "title": "Project Discovery",
-        "description": "Explore project summaries of every project in CALYPR",
-        "icon": "/icons/compass.svg",
-        "href": "/Discovery",
-        "perms": null
-      },
-      {
         "title": "Image Viewer",
         "description": "View available .ome.tif images using Avivator",
         "icon": "/icons/layers-intersect.svg",
         "href": "/AvailableImages",
-        "perms": null
-      },
-      {
-        "title": "My Projects",
-        "description": "Identify the list of projects in which you have access",
-        "icon": "/icons/key.svg",
-        "href": "/MyProjects",
         "perms": null
       }
     ]
