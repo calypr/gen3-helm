@@ -25,8 +25,8 @@ spec:
             done
             echo "Grip is online. Creating {{.Values.graphName}} Graph"
             curl -X POST 'http://{{ .Values.serviceName }}:8201/v1/graph/{{.Values.graphName}}'
-            echo "Adding {{.Values.graphName}} schema from https://raw.githubusercontent.com/bmeg/iceberg/9c916e834716ea725d956f529ae37a343b10f3e6/schemas/graph/graph-fhir.json"
-            curl -s https://raw.githubusercontent.com/bmeg/iceberg/9c916e834716ea725d956f529ae37a343b10f3e6/schemas/graph/graph-fhir.json -o /tmp/schema.json
+            echo "Adding {{.Values.graphName}} schema from https://raw.githubusercontent.com/bmeg/iceberg/237479820e9544f3139ef793fb0e52eb3720c7a7/schemas/graph/graph-fhir.json"
+            curl -s https://raw.githubusercontent.com/bmeg/iceberg/237479820e9544f3139ef793fb0e52eb3720c7a7/schemas/graph/graph-fhir.json -o /tmp/schema.json
             echo '{"graph":"{{.Values.graphName}}","data":' > /tmp/request.json
             cat /tmp/schema.json >> /tmp/request.json
             echo '}' >> /tmp/request.json
