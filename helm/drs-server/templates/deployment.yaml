@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "drs-server.fullname" . }}
+  labels:
+    {{- include "drs-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "drs-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "drs-server.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: drs-server
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve", "--config", "/etc/drs/config.yaml"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          env:
+            - name: DRS_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: DRS_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_host
+            - name: DRS_DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_port
+            - name: DRS_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_username
+            - name: DRS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_password
+            - name: DRS_DB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_database
+            - name: DRS_DB_SSLMODE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "drs-server.appDbSecretName" . }}
+                  key: db_sslmode
+          volumeMounts:
+            - name: config
+              mountPath: /etc/drs
+              readOnly: true
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "drs-server.fullname" . }}-config

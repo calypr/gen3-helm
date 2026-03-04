@@ -1,0 +1,7 @@
+apiVersion: v2
+name: drs-server
+description: Helm chart for drs-server (GA4GH DRS + Gen3 compatibility)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+

@@ -1,0 +1,62 @@
+{{- if .Values.postgres.initJob.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "drs-server.fullname" . }}-postgres-schema
+  labels:
+    {{- include "drs-server.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  drs_schema.sql: |
+    CREATE TABLE IF NOT EXISTS drs_object (
+      id TEXT PRIMARY KEY,
+      size BIGINT,
+      created_time TIMESTAMPTZ,
+      updated_time TIMESTAMPTZ,
+      name TEXT,
+      version TEXT,
+      description TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS drs_object_access_method (
+      object_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      type TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS drs_object_checksum (
+      object_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS drs_object_authz (
+      object_id TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS s3_credential (
+      bucket TEXT PRIMARY KEY,
+      region TEXT,
+      access_key TEXT,
+      secret_key TEXT,
+      endpoint TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS drs_object_access_method_object_id_idx
+      ON drs_object_access_method(object_id);
+    CREATE INDEX IF NOT EXISTS drs_object_checksum_object_id_idx
+      ON drs_object_checksum(object_id);
+    CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_idx
+      ON drs_object_checksum(checksum);
+    CREATE INDEX IF NOT EXISTS drs_object_authz_object_id_idx
+      ON drs_object_authz(object_id);
+    CREATE INDEX IF NOT EXISTS drs_object_authz_resource_idx
+      ON drs_object_authz(resource);
+{{- end }}

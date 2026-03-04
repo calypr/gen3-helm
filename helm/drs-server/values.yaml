@@ -1,0 +1,59 @@
+fullnameOverride: drs-server
+
+replicaCount: 1
+
+image:
+  repository: quay.io/ohsu-comp-bio/drs-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  port: 8080
+  authMode: gen3
+  basicAuth:
+    username: ""
+    password: ""
+  s3Credentials: []
+
+postgres:
+  app:
+    existingSecret: ""
+    secretName: drs-server-db
+    db_host: ""
+    db_port: ""
+    db_username: drs_user
+    db_password: drs_pass
+    db_database: drs_db
+    db_sslmode: disable
+  admin:
+    existingSecret: ""
+    secretName: drs-server-db-admin
+    host: ""
+    port: ""
+    username: ""
+    password: ""
+    database: postgres
+  initJob:
+    enabled: true
+    image: postgres:16
+    waitTimeoutSeconds: 180
+
+resources: {}
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
