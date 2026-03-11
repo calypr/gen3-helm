@@ -76,7 +76,7 @@
       {
         "title": "GraphQL Query Editor",
         "description": "Query graph databases via a web interface",
-        "icon": "/icons/layers-intersect.svg",
+        "icon": "/icons/query.svg",
         "href": "/Query",
         "perms": null
       }
