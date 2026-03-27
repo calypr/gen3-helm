@@ -342,6 +342,12 @@ env:
 
 # -- (list) Volumes to attach to the container.
 volumes:
+  - name: config-workdir
+    emptyDir: {}
+
+  - name: fence-keys-workdir
+    emptyDir: {}
+
   - name: old-config-volume
     secret:
       secretName: "fence-secret"
@@ -381,6 +387,18 @@ volumes:
 
 # -- (list) Volumes to mount to the container.
 volumeMounts:
+  - name: config-volume
+    readOnly: true
+    mountPath: /var/run/fence-secrets/fence-config-secret.yaml
+    subPath: fence-config.yaml
+  - name: config-workdir
+    mountPath: /var/www/fence
+  - name: fence-jwt-keys
+    readOnly: true
+    mountPath: /var/run/fence-secrets/jwt_private_key.pem
+    subPath: jwt_private_key.pem
+  - name: fence-keys-workdir
+    mountPath: /fence/keys/key
   - name: "old-config-volume"
     readOnly: true
     mountPath: "/var/www/fence/local_settings.py"
@@ -405,10 +423,10 @@ volumeMounts:
     readOnly: true
     mountPath: "/fence/fence/static/privacy_policy.md"
     subPath: "privacy_policy.md"
-  - name: "config-volume"
-    readOnly: true
-    mountPath: "/var/www/fence/fence-config.yaml"
-    subPath: fence-config.yaml
+  # - name: "config-volume"
+  #   readOnly: true
+  #   mountPath: "/var/www/fence/fence-config.yaml"
+  #   subPath: fence-config.yaml
   - name: "yaml-merge"
     readOnly: true
     mountPath: "/var/www/fence/yaml_merge.py"
@@ -421,10 +439,10 @@ volumeMounts:
     readOnly: true
     mountPath: "/var/www/fence/fence_google_storage_creds_secret.json"
     subPath: fence_google_storage_creds_secret.json
-  - name: "fence-jwt-keys"
-    readOnly: true
-    mountPath: "/fence/keys/key/jwt_private_key.pem"
-    subPath: "jwt_private_key.pem"
+  # - name: "fence-jwt-keys"
+  #   readOnly: true
+  #   mountPath: "/fence/keys/key/jwt_private_key.pem"
+  #   subPath: "jwt_private_key.pem"
 
 # -- (list) Volumes to mount to the init container.
 initVolumeMounts:
