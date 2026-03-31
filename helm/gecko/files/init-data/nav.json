@@ -56,7 +56,7 @@
         "title": "Directory Structure",
         "description": "Search for files via a tree based interactive search",
         "icon": "/icons/binary-tree.svg",
-        "href": "/Miller",
+        "href": "/Browser",
         "perms": null
       },
       {
