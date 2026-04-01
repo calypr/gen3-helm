@@ -2,9 +2,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "drs-server.fullname" . }}-postgres-init
+  name: {{ include "syfon.fullname" . }}-postgres-init
   labels:
-    {{- include "drs-server.labels" . | nindent 4 }}
+    {{- include "syfon.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "drs-server.selectorLabels" . | nindent 8 }}
+        {{- include "syfon.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
       containers:
@@ -57,52 +57,52 @@ spec:
             - name: DRS_DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_host
             - name: DRS_DB_PORT
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_port
             - name: DRS_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_username
             - name: DRS_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_password
             - name: DRS_DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_database
             - name: PG_ADMIN_HOST
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.adminDbSecretName" . }}
+                  name: {{ include "syfon.adminDbSecretName" . }}
                   key: host
             - name: PG_ADMIN_PORT
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.adminDbSecretName" . }}
+                  name: {{ include "syfon.adminDbSecretName" . }}
                   key: port
             - name: PG_ADMIN_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.adminDbSecretName" . }}
+                  name: {{ include "syfon.adminDbSecretName" . }}
                   key: username
             - name: PG_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.adminDbSecretName" . }}
+                  name: {{ include "syfon.adminDbSecretName" . }}
                   key: password
             - name: PG_ADMIN_DB
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.adminDbSecretName" . }}
+                  name: {{ include "syfon.adminDbSecretName" . }}
                   key: database
           volumeMounts:
             - name: schema
@@ -110,5 +110,5 @@ spec:
       volumes:
         - name: schema
           configMap:
-            name: {{ include "drs-server.fullname" . }}-postgres-schema
+            name: {{ include "syfon.fullname" . }}-postgres-schema
 {{- end }}

@@ -1,6 +1,6 @@
-# drs-server Helm Chart
+# syfon Helm Chart
 
-This chart deploys `drs-server` with:
+This chart deploys `syfon` with:
 
 - Config mounted into the pod at `/etc/drs/config.yaml` (not baked into the image)
 - DB credentials injected via secret env vars (`DRS_DB_*`)
@@ -12,12 +12,12 @@ This chart deploys `drs-server` with:
 ## Key Compatibility Notes
 
 - Secret keys mirror indexd credentials naming (`db_host`, `db_username`, `db_password`, `db_database`) with additional `db_port` and `db_sslmode`.
-- In `gen3` mode, `drs-server` requires PostgreSQL.
+- In `gen3` mode, `syfon` requires PostgreSQL.
 
 ## Install
 
 ```bash
-helm upgrade --install drs-server ./helm/drs-server
+helm upgrade --install syfon ./helm/syfon
 ```
 
 ## Existing Secrets

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "drs-server.fullname" . }}
+  name: {{ include "syfon.fullname" . }}
   labels:
-    {{- include "drs-server.labels" . | nindent 4 }}
+    {{- include "syfon.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,5 +12,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "drs-server.selectorLabels" . | nindent 4 }}
+    {{- include "syfon.selectorLabels" . | nindent 4 }}
 

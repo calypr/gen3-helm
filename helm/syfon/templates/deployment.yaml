@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "drs-server.fullname" . }}
+  name: {{ include "syfon.fullname" . }}
   labels:
-    {{- include "drs-server.labels" . | nindent 4 }}
+    {{- include "syfon.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "drs-server.selectorLabels" . | nindent 6 }}
+      {{- include "syfon.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "drs-server.selectorLabels" . | nindent 8 }}
+        {{- include "syfon.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: drs-server
+        - name: syfon
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["serve", "--config", "/etc/drs/config.yaml"]
@@ -45,32 +45,32 @@ spec:
             - name: DRS_DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_host
             - name: DRS_DB_PORT
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_port
             - name: DRS_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_username
             - name: DRS_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_password
             - name: DRS_DB_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_database
             - name: DRS_DB_SSLMODE
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "drs-server.appDbSecretName" . }}
+                  name: {{ include "syfon.appDbSecretName" . }}
                   key: db_sslmode
           volumeMounts:
             - name: config
@@ -81,4 +81,4 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "drs-server.fullname" . }}-config
+            name: {{ include "syfon.fullname" . }}-config

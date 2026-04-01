@@ -1,12 +1,12 @@
-{{- define "drs-server.name" -}}
+{{- define "syfon.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "drs-server.fullname" -}}
+{{- define "syfon.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := include "drs-server.name" . -}}
+{{- $name := include "syfon.name" . -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -15,19 +15,19 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "drs-server.labels" -}}
-app.kubernetes.io/name: {{ include "drs-server.name" . }}
+{{- define "syfon.labels" -}}
+app.kubernetes.io/name: {{ include "syfon.name" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
-{{- define "drs-server.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "drs-server.name" . }}
+{{- define "syfon.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "syfon.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{- define "drs-server.appDbSecretName" -}}
+{{- define "syfon.appDbSecretName" -}}
 {{- if .Values.postgres.app.existingSecret -}}
 {{- .Values.postgres.app.existingSecret -}}
 {{- else -}}
@@ -35,7 +35,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 {{- end -}}
 
-{{- define "drs-server.adminDbSecretName" -}}
+{{- define "syfon.adminDbSecretName" -}}
 {{- if .Values.postgres.admin.existingSecret -}}
 {{- .Values.postgres.admin.existingSecret -}}
 {{- else -}}

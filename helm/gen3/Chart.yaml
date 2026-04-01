@@ -114,10 +114,10 @@ dependencies:
 - name: qdrant
   version: 1.15.4
   repository: "https://qdrant.github.io/qdrant-helm"
-- name: drs-server
+- name: syfon
   version: 0.1.0
-  repository: "file://../drs-server"
-  condition: drs-server.enabled
+  repository: "file://../syfon"
+  condition: syfon.enabled
 
 # A chart can be either an 'application' or a 'library' chart.
 #
