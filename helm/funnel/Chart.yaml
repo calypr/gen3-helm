@@ -30,7 +30,7 @@ dependencies:
     version: 11.9.13
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: postgresql.enabled
-  
+
   - name: mongodb
     version: 13.9.4
     repository: https://charts.bitnami.com/bitnami
