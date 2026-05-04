@@ -92,10 +92,21 @@ spec:
                   name: {{ include "syfon.adminDbSecretName" . }}
                   key: username
             - name: PG_ADMIN_PASSWORD
+              {{- $global := (.Values.global | default dict) -}}
+              {{- $pg := (get $global "postgres" | default dict) -}}
+              {{- $master := (get $pg "master" | default dict) -}}
+              {{- $globalMasterPass := (get $master "password" | default "") -}}
+              {{- if and (not .Values.postgres.admin.existingSecret) (get $global "dev") (not .Values.postgres.admin.password) (not $globalMasterPass) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: postgres-password
+              {{- else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ include "syfon.adminDbSecretName" . }}
                   key: password
+              {{- end }}
             - name: PG_ADMIN_DB
               valueFrom:
                 secretKeyRef:
