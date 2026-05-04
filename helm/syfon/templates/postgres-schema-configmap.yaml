@@ -5,10 +5,6 @@ metadata:
   name: {{ include "syfon.fullname" . }}-postgres-schema
   labels:
     {{- include "syfon.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-10"
-    "helm.sh/hook-delete-policy": before-hook-creation
 data:
   drs_schema.sql: |
     CREATE TABLE IF NOT EXISTS drs_object (
@@ -25,6 +21,8 @@ data:
       object_id TEXT NOT NULL,
       url TEXT NOT NULL,
       type TEXT NOT NULL,
+      org TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL DEFAULT '',
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
@@ -35,28 +33,257 @@ data:
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS drs_object_authz (
+    CREATE TABLE IF NOT EXISTS drs_object_alias (
+      alias_id TEXT PRIMARY KEY,
       object_id TEXT NOT NULL,
-      resource TEXT NOT NULL,
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
+    ALTER TABLE drs_object_access_method
+      ADD COLUMN IF NOT EXISTS org TEXT NOT NULL DEFAULT '';
+
+    ALTER TABLE drs_object_access_method
+      ADD COLUMN IF NOT EXISTS project TEXT NOT NULL DEFAULT '';
+
     CREATE TABLE IF NOT EXISTS s3_credential (
       bucket TEXT PRIMARY KEY,
+      provider TEXT NOT NULL DEFAULT 's3',
       region TEXT,
       access_key TEXT,
       secret_key TEXT,
-      endpoint TEXT
+      endpoint TEXT,
+      billing_log_bucket TEXT,
+      billing_log_prefix TEXT
     );
+
+    ALTER TABLE s3_credential
+      ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 's3';
+
+    ALTER TABLE s3_credential
+      ADD COLUMN IF NOT EXISTS billing_log_bucket TEXT;
+
+    ALTER TABLE s3_credential
+      ADD COLUMN IF NOT EXISTS billing_log_prefix TEXT;
+
+    CREATE TABLE IF NOT EXISTS bucket_scope (
+      organization TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      bucket TEXT NOT NULL,
+      path_prefix TEXT NULL,
+      PRIMARY KEY (organization, project_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS lfs_pending_metadata (
+      oid TEXT PRIMARY KEY,
+      candidate_json JSONB NOT NULL,
+      created_time TIMESTAMPTZ NOT NULL,
+      expires_time TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS object_usage (
+      object_id TEXT PRIMARY KEY REFERENCES drs_object(id) ON DELETE CASCADE,
+      upload_count BIGINT NOT NULL DEFAULT 0,
+      download_count BIGINT NOT NULL DEFAULT 0,
+      last_upload_time TIMESTAMPTZ NULL,
+      last_download_time TIMESTAMPTZ NULL,
+      updated_time TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS object_usage_event (
+      id BIGSERIAL PRIMARY KEY,
+      object_id TEXT NOT NULL,
+      event_type TEXT NOT NULL CHECK (event_type IN ('upload','download')),
+      event_time TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS transfer_attribution_event (
+      event_id TEXT PRIMARY KEY,
+      access_grant_id TEXT NOT NULL DEFAULT '',
+      event_type TEXT NOT NULL CHECK (event_type IN ('access_issued')),
+      direction TEXT NOT NULL DEFAULT 'download' CHECK (direction IN ('download','upload')),
+      event_time TIMESTAMPTZ NOT NULL,
+      request_id TEXT NOT NULL DEFAULT '',
+      object_id TEXT NOT NULL DEFAULT '',
+      sha256 TEXT NOT NULL DEFAULT '',
+      object_size BIGINT NOT NULL DEFAULT 0,
+      organization TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL DEFAULT '',
+      access_id TEXT NOT NULL DEFAULT '',
+      provider TEXT NOT NULL DEFAULT '',
+      bucket TEXT NOT NULL DEFAULT '',
+      storage_url TEXT NOT NULL DEFAULT '',
+      range_start BIGINT NULL,
+      range_end BIGINT NULL,
+      bytes_requested BIGINT NOT NULL DEFAULT 0,
+      bytes_completed BIGINT NOT NULL DEFAULT 0,
+      actor_email TEXT NOT NULL DEFAULT '',
+      actor_subject TEXT NOT NULL DEFAULT '',
+      auth_mode TEXT NOT NULL DEFAULT '',
+      client_name TEXT NOT NULL DEFAULT '',
+      client_version TEXT NOT NULL DEFAULT '',
+      transfer_session_id TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS access_grant (
+      access_grant_id TEXT PRIMARY KEY,
+      first_issued_at TIMESTAMPTZ NOT NULL,
+      last_issued_at TIMESTAMPTZ NOT NULL,
+      issue_count BIGINT NOT NULL DEFAULT 0,
+      object_id TEXT NOT NULL DEFAULT '',
+      sha256 TEXT NOT NULL DEFAULT '',
+      object_size BIGINT NOT NULL DEFAULT 0,
+      organization TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL DEFAULT '',
+      access_id TEXT NOT NULL DEFAULT '',
+      provider TEXT NOT NULL DEFAULT '',
+      bucket TEXT NOT NULL DEFAULT '',
+      storage_url TEXT NOT NULL DEFAULT '',
+      actor_email TEXT NOT NULL DEFAULT '',
+      actor_subject TEXT NOT NULL DEFAULT '',
+      auth_mode TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS provider_transfer_event (
+      provider_event_id TEXT PRIMARY KEY,
+      access_grant_id TEXT NOT NULL DEFAULT '',
+      direction TEXT NOT NULL CHECK (direction IN ('download','upload')),
+      event_time TIMESTAMPTZ NOT NULL,
+      request_id TEXT NOT NULL DEFAULT '',
+      provider_request_id TEXT NOT NULL DEFAULT '',
+      object_id TEXT NOT NULL DEFAULT '',
+      sha256 TEXT NOT NULL DEFAULT '',
+      object_size BIGINT NOT NULL DEFAULT 0,
+      organization TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL DEFAULT '',
+      access_id TEXT NOT NULL DEFAULT '',
+      provider TEXT NOT NULL DEFAULT '',
+      bucket TEXT NOT NULL DEFAULT '',
+      object_key TEXT NOT NULL DEFAULT '',
+      storage_url TEXT NOT NULL DEFAULT '',
+      range_start BIGINT NULL,
+      range_end BIGINT NULL,
+      bytes_transferred BIGINT NOT NULL DEFAULT 0,
+      http_method TEXT NOT NULL DEFAULT '',
+      http_status INTEGER NOT NULL DEFAULT 0,
+      requester_principal TEXT NOT NULL DEFAULT '',
+      source_ip TEXT NOT NULL DEFAULT '',
+      user_agent TEXT NOT NULL DEFAULT '',
+      raw_event_ref TEXT NOT NULL DEFAULT '',
+      actor_email TEXT NOT NULL DEFAULT '',
+      actor_subject TEXT NOT NULL DEFAULT '',
+      auth_mode TEXT NOT NULL DEFAULT '',
+      reconciliation_status TEXT NOT NULL DEFAULT 'unmatched' CHECK (reconciliation_status IN ('matched','ambiguous','unmatched'))
+    );
+
+    CREATE TABLE IF NOT EXISTS provider_transfer_sync_run (
+      sync_id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL DEFAULT '',
+      bucket TEXT NOT NULL DEFAULT '',
+      organization TEXT NOT NULL DEFAULT '',
+      project TEXT NOT NULL DEFAULT '',
+      from_time TIMESTAMPTZ NOT NULL,
+      to_time TIMESTAMPTZ NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending','completed','failed')),
+      requested_at TIMESTAMPTZ NOT NULL,
+      started_at TIMESTAMPTZ NULL,
+      completed_at TIMESTAMPTZ NULL,
+      imported_events BIGINT NOT NULL DEFAULT 0,
+      matched_events BIGINT NOT NULL DEFAULT 0,
+      ambiguous_events BIGINT NOT NULL DEFAULT 0,
+      unmatched_events BIGINT NOT NULL DEFAULT 0,
+      error_message TEXT NOT NULL DEFAULT ''
+    );
+
+    ALTER TABLE transfer_attribution_event
+      ADD COLUMN IF NOT EXISTS access_grant_id TEXT NOT NULL DEFAULT '';
+
+    ALTER TABLE transfer_attribution_event
+      ADD COLUMN IF NOT EXISTS direction TEXT NOT NULL DEFAULT 'download';
 
     CREATE INDEX IF NOT EXISTS drs_object_access_method_object_id_idx
       ON drs_object_access_method(object_id);
+
     CREATE INDEX IF NOT EXISTS drs_object_checksum_object_id_idx
       ON drs_object_checksum(object_id);
+
     CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_idx
       ON drs_object_checksum(checksum);
-    CREATE INDEX IF NOT EXISTS drs_object_authz_object_id_idx
-      ON drs_object_authz(object_id);
-    CREATE INDEX IF NOT EXISTS drs_object_authz_resource_idx
-      ON drs_object_authz(resource);
+
+    CREATE INDEX IF NOT EXISTS drs_object_access_method_scope_idx
+      ON drs_object_access_method(org, project);
+
+    CREATE INDEX IF NOT EXISTS drs_object_alias_object_id_idx
+      ON drs_object_alias(object_id);
+
+    CREATE INDEX IF NOT EXISTS idx_bucket_scope_bucket
+      ON bucket_scope(bucket);
+
+    CREATE INDEX IF NOT EXISTS idx_lfs_pending_metadata_expires
+      ON lfs_pending_metadata(expires_time);
+
+    CREATE INDEX IF NOT EXISTS idx_lfs_pending_metadata_created
+      ON lfs_pending_metadata(created_time);
+
+    CREATE INDEX IF NOT EXISTS idx_object_usage_last_download_time
+      ON object_usage(last_download_time);
+
+    CREATE INDEX IF NOT EXISTS idx_object_usage_last_upload_time
+      ON object_usage(last_upload_time);
+
+    CREATE INDEX IF NOT EXISTS idx_object_usage_event_object_id
+      ON object_usage_event(object_id);
+
+    CREATE INDEX IF NOT EXISTS idx_object_usage_event_event_time
+      ON object_usage_event(event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_scope_time
+      ON transfer_attribution_event(organization, project, event_type, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_direction_time
+      ON transfer_attribution_event(direction, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_actor_time
+      ON transfer_attribution_event(actor_email, actor_subject, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_provider_time
+      ON transfer_attribution_event(provider, bucket, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_sha_time
+      ON transfer_attribution_event(sha256, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_session
+      ON transfer_attribution_event(transfer_session_id);
+
+    CREATE INDEX IF NOT EXISTS idx_access_grant_storage_time
+      ON access_grant(provider, bucket, storage_url, last_issued_at);
+
+    CREATE INDEX IF NOT EXISTS idx_access_grant_scope_time
+      ON access_grant(organization, project, last_issued_at);
+
+    CREATE INDEX IF NOT EXISTS idx_access_grant_sha_time
+      ON access_grant(sha256, last_issued_at);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_scope_time
+      ON provider_transfer_event(organization, project, direction, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_actor_time
+      ON provider_transfer_event(actor_email, actor_subject, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_provider_time
+      ON provider_transfer_event(provider, bucket, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_sha_time
+      ON provider_transfer_event(sha256, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_status
+      ON provider_transfer_event(reconciliation_status, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_transfer_grant
+      ON provider_transfer_event(access_grant_id);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_sync_bucket_time
+      ON provider_transfer_sync_run(provider, bucket, requested_at);
+
+    CREATE INDEX IF NOT EXISTS idx_provider_sync_scope_time
+      ON provider_transfer_sync_run(organization, project, requested_at);
 {{- end }}

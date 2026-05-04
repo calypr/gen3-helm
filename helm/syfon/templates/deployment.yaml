@@ -1,3 +1,5 @@
+{{- $cfg := (.Values.config | default dict) -}}
+{{- $configPort := (get $cfg "port" | default 8080) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +23,7 @@ spec:
           args: ["serve", "--config", "/etc/drs/config.yaml"]
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ $configPort }}
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -41,7 +43,7 @@ spec:
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           env:
             - name: DRS_PORT
-              value: {{ .Values.service.port | quote }}
+              value: {{ $configPort | quote }}
             - name: DRS_DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -72,6 +74,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "syfon.appDbSecretName" . }}
                   key: db_sslmode
+            {{- with .Values.extraEnv }}
+{{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: config
               mountPath: /etc/drs
@@ -80,5 +85,5 @@ spec:
 {{ toYaml .Values.resources | indent 12 }}
       volumes:
         - name: config
-          configMap:
-            name: {{ include "syfon.fullname" . }}-config
+          secret:
+            secretName: {{ include "syfon.fullname" . }}-config

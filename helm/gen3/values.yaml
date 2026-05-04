@@ -284,6 +284,10 @@ wts:
   # -- (bool) Whether to deploy the wts subchart.
   enabled: true
 
+syfon:
+  # -- (bool) Whether to deploy the syfon subchart.
+  enabled: false
+
 # Disable persistence by default so we can spin up and down ephemeral environments
 postgresql:
   primary:

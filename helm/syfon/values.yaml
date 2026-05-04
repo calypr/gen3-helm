@@ -13,11 +13,23 @@ service:
 
 config:
   port: 8080
-  authMode: gen3
-  basicAuth:
-    username: ""
-    password: ""
-  s3Credentials: []
+  auth:
+    mode: gen3
+  routes:
+    docs: true
+    ga4gh: true
+    internal: true
+    lfs: true
+    metrics: true
+  signing:
+    default_expiry_seconds: 900
+  credential_encryption: {}
+  # s3_credentials are passed through to Syfon directly. The chart also derives
+  # bucket_scopes from per-credential `resources` entries and normalizes
+  # `project` -> `project_id`, `org_path` -> `organization_sub_path`, and
+  # `project_path` -> `project_sub_path` in the rendered config.
+  s3_credentials: []
+  bucket_scopes: []
 
 postgres:
   app:
@@ -43,6 +55,8 @@ postgres:
     waitTimeoutSeconds: 180
 
 resources: {}
+
+extraEnv: []
 
 probes:
   liveness:
