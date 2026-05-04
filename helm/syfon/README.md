@@ -15,6 +15,11 @@ This chart deploys `syfon` with:
 `config` is rendered directly as Syfon's server config. Use the same keys that
 `syfon serve --config` accepts.
 
+In `gen3` auth mode, the chart fills `config.auth.fence_url` from
+`global.hostname` when it is omitted, rendering it as
+`https://<global.hostname>/user`. Set `config.auth.fence_url` explicitly only
+when Syfon should trust a different public Fence endpoint.
+
 Example:
 
 ```yaml
@@ -22,6 +27,8 @@ config:
   port: 8080
   auth:
     mode: gen3
+    # Optional; defaults to https://<global.hostname>/user
+    fence_url: https://gen3.example.org/user
   routes:
     docs: true
     ga4gh: true

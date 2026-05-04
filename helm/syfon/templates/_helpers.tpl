@@ -43,3 +43,19 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 {{- end -}}
 
+{{- define "syfon.fenceURL" -}}
+{{- $cfg := .Values.config | default dict -}}
+{{- $auth := get $cfg "auth" | default dict -}}
+{{- $configured := get $auth "fence_url" | default "" | toString | trim -}}
+{{- if $configured -}}
+{{- $configured -}}
+{{- else -}}
+{{- $global := .Values.global | default dict -}}
+{{- $hostname := get $global "hostname" | default "" | toString | trim -}}
+{{- if $hostname -}}
+{{- $host := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" $hostname)) -}}
+{{- printf "https://%s/user" $host -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+

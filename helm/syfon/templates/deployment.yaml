@@ -1,5 +1,6 @@
 {{- $cfg := (.Values.config | default dict) -}}
 {{- $configPort := (get $cfg "port" | default 8080) -}}
+{{- $fenceURL := include "syfon.fenceURL" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -44,6 +45,10 @@ spec:
           env:
             - name: DRS_PORT
               value: {{ $configPort | quote }}
+            {{- if $fenceURL }}
+            - name: DRS_FENCE_URL
+              value: {{ $fenceURL | quote }}
+            {{- end }}
             - name: DRS_DB_HOST
               valueFrom:
                 secretKeyRef:

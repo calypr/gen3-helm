@@ -15,6 +15,9 @@ config:
   port: 8080
   auth:
     mode: gen3
+    # Public Fence endpoint used to validate Gen3 token issuers and fetch /user/user privileges.
+    # Defaults to https://<global.hostname>/user when omitted.
+    fence_url: ""
   routes:
     docs: true
     ga4gh: true
