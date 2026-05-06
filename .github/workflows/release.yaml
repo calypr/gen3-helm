@@ -3,7 +3,20 @@ name: Release Charts
 on:
   push:
     branches:
-      - master
+      - ohsu-develop
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -12,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -20,19 +33,18 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.10.0
-          
-      - name: Add helm repositories
+
+      - run: git pull
+
+      - name: Add Bitnami Repo
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.4.1
-        with:
-          charts_dir: helm
+        uses: helm/chart-releaser-action@v1.7.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          charts_dir: helm
+          skip_existing: true
