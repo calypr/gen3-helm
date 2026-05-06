@@ -27,10 +27,11 @@ config:
   signing:
     default_expiry_seconds: 900
   credential_encryption: {}
-  # s3_credentials are passed through to Syfon directly. The chart also derives
-  # bucket_scopes from per-credential `resources` entries and normalizes
-  # `project` -> `project_id`, `org_path` -> `organization_sub_path`, and
-  # `project_path` -> `project_sub_path` in the rendered config.
+  # Preferred Syfon config shape. Each bucket may carry nested org/project routing
+  # resources, which Syfon flattens into runtime bucket scope records on startup.
+  buckets: []
+  # Legacy inputs still accepted by Syfon, but the chart no longer synthesizes
+  # bucket_scopes from credential resources.
   s3_credentials: []
   bucket_scopes: []
 

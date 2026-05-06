@@ -102,6 +102,25 @@ postgresql:
       # -- (bool) Option to persist the dbs data.
       enabled: false
 
+qdrant:
+  # -- (bool) Whether Gecko should connect to Qdrant.
+  enabled: false
+  # -- (string) Kubernetes Secret containing the Qdrant API key.
+  apiKeySecretName: qdrant-api-key-secret
+  # -- (string) Key in the Qdrant API key Secret.
+  apiKeySecretKey: api-key
+  # -- (string) Qdrant gRPC port.
+  port: "6334"
+  persistence:
+    # -- (bool) Whether to create the local Qdrant PersistentVolume.
+    enabled: false
+    # -- (string) StorageClass used by the local Qdrant PersistentVolume.
+    storageClass: qdrant-manual-storage
+    # -- (string) Local path used by the local Qdrant PersistentVolume.
+    hostPath: /mnt/data/qdrant-local
+    # -- (string) Size of the local Qdrant PersistentVolume.
+    size: 26Gi
+
 
 # -- (int) Number of replicas for the deployment.
 replicaCount: 1

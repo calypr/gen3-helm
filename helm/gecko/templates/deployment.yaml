@@ -74,16 +74,18 @@ spec:
                   key: serviceName
             - name: GRIP_PORT
               value: "8202"
+            {{- if .Values.qdrant.enabled }}
             - name: QDRANT_HOST
               value: {{ printf "%s-qdrant" .Release.Name | quote }}
             - name: QDRANT_PORT
-              value: "6334"
+              value: {{ .Values.qdrant.port | quote }}
             - name: QDRANT_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{  "qdrant-api-key-secret" }}
-                  key: {{  "api-key" }}
+                  name: {{ .Values.qdrant.apiKeySecretName | quote }}
+                  key: {{ .Values.qdrant.apiKeySecretKey | quote }}
                   optional: false
+            {{- end }}
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
