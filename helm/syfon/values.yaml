@@ -1,0 +1,77 @@
+fullnameOverride: syfon
+
+replicaCount: 1
+
+image:
+  repository: quay.io/ohsu-comp-bio/syfon
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  port: 8080
+  auth:
+    mode: gen3
+    # Public Fence endpoint used to validate Gen3 token issuers and fetch /user/user privileges.
+    # Defaults to https://<global.hostname>/user when omitted.
+    fence_url: ""
+  routes:
+    docs: true
+    ga4gh: true
+    internal: true
+    lfs: true
+    metrics: true
+  signing:
+    default_expiry_seconds: 900
+  credential_encryption: {}
+  # Preferred Syfon config shape. Each bucket may carry nested org/project routing
+  # resources, which Syfon flattens into runtime bucket scope records on startup.
+  buckets: []
+  # Legacy inputs still accepted by Syfon, but the chart no longer synthesizes
+  # bucket_scopes from credential resources.
+  s3_credentials: []
+  bucket_scopes: []
+
+postgres:
+  app:
+    existingSecret: ""
+    secretName: syfon-db
+    db_host: ""
+    db_port: ""
+    db_username: syfon_user
+    db_password: syfon_pass
+    db_database: syfon_db
+    db_sslmode: disable
+  admin:
+    existingSecret: ""
+    secretName: syfon-db-admin
+    host: ""
+    port: ""
+    username: ""
+    password: ""
+    database: postgres
+  initJob:
+    enabled: true
+    image: postgres:16
+    waitTimeoutSeconds: 180
+
+resources: {}
+
+extraEnv: []
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3

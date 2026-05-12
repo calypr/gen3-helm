@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fence-service
+  name: {{ include "syfon.fullname" . }}
   labels:
-    {{- include "fence.labels" . | nindent 4 }}
+    {{- include "syfon.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +12,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "fence.selectorLabels" . | nindent 4 }}
+    {{- include "syfon.selectorLabels" . | nindent 4 }}
+

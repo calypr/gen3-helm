@@ -1,3 +1,4 @@
+{{- if and .Values.qdrant.enabled .Values.qdrant.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -9,10 +10,11 @@ metadata:
     meta.helm.sh/release-namespace: "default"
 spec:
   capacity:
-    storage: 26Gi
+    storage: {{ .Values.qdrant.persistence.size | quote }}
   accessModes:
     - ReadWriteOnce
-  storageClassName: "qdrant-manual-storage"
+  storageClassName: {{ .Values.qdrant.persistence.storageClass | quote }}
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/data/qdrant-local"
+    path: {{ .Values.qdrant.persistence.hostPath | quote }}
+{{- end }}

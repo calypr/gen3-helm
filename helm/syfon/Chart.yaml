@@ -1,0 +1,6 @@
+apiVersion: v2
+name: syfon
+description: Helm chart for syfon (GA4GH DRS + Gen3 compatibility)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

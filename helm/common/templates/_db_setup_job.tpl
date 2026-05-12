@@ -135,32 +135,39 @@ spec:
             echo "SERVICE_PGDB=$SERVICE_PGDB"
             echo "SERVICE_PGUSER=$SERVICE_PGUSER"
 
-            until pg_isready -h $PGHOST -p $PGPORT -U $SERVICE_PGUSER -d template1
+            until pg_isready -h $PGHOST -p $PGPORT -U $PGUSER -d template1
             do
               >&2 echo "Postgres is unavailable - sleeping"
               sleep 5
             done
             >&2 echo "Postgres is up - executing command"
 
+            printf '%s\n' \
+              "SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'service_user', :'service_pass')" \
+              "WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'service_user')\\gexec" \
+              "ALTER ROLE :\"service_user\" WITH LOGIN PASSWORD :'service_pass';" \
+              "SELECT format('CREATE DATABASE %I OWNER %I', :'service_db', :'service_user')" \
+              "WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'service_db')\\gexec" \
+              "GRANT ALL ON DATABASE :\"service_db\" TO :\"service_user\" WITH GRANT OPTION;" \
+              | psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d postgres \
+              -v service_user="$SERVICE_PGUSER" \
+              -v service_db="$SERVICE_PGDB" \
+              -v service_pass="$SERVICE_PGPASS" \
+              -f -
 
-            if psql -lqt | cut -d \| -f 1 | grep -qw $SERVICE_PGDB; then
-              gen3_log_info "Database exists"
-              PGPASSWORD=$SERVICE_PGPASS psql -d $SERVICE_PGDB -h $PGHOST -p $PGPORT -U $SERVICE_PGUSER -c "\conninfo"
+            printf '%s\n' \
+              "CREATE EXTENSION IF NOT EXISTS ltree;" \
+              "ALTER ROLE :\"service_user\" WITH LOGIN;" \
+              "GRANT ALL ON SCHEMA public TO :\"service_user\";" \
+              "ALTER SCHEMA public OWNER TO :\"service_user\";" \
+              | psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$SERVICE_PGDB" \
+              -v service_user="$SERVICE_PGUSER" \
+              -f -
 
-              # Update secret to signal that db is ready, and services can start
-              kubectl patch secret/{{ .Chart.Name }}-dbcreds -p '{"data":{"dbcreated":"dHJ1ZQo="}}'
-            else
-              echo "database does not exist"
-              psql -tc "SELECT 1 FROM pg_database WHERE datname = '$SERVICE_PGDB'" | grep -q 1 || psql -c "CREATE DATABASE \"$SERVICE_PGDB\";"
-              gen3_log_info psql -tc "SELECT 1 FROM pg_user WHERE usename = '$SERVICE_PGUSER'" | grep -q 1 || psql -c "CREATE USER \"$SERVICE_PGUSER\" WITH PASSWORD '$SERVICE_PGPASS';"
-              psql -tc "SELECT 1 FROM pg_user WHERE usename = '$SERVICE_PGUSER'" | grep -q 1 || psql -c "CREATE USER \"$SERVICE_PGUSER\" WITH PASSWORD '$SERVICE_PGPASS';"
-              psql -c "GRANT ALL ON DATABASE \"$SERVICE_PGDB\" TO \"$SERVICE_PGUSER\" WITH GRANT OPTION;"
-              psql -d $SERVICE_PGDB -c "CREATE EXTENSION ltree; ALTER ROLE \"$SERVICE_PGUSER\" WITH LOGIN"
-              PGPASSWORD=$SERVICE_PGPASS psql -d $SERVICE_PGDB -h $PGHOST -p $PGPORT -U $SERVICE_PGUSER -c "\conninfo"
+            PGPASSWORD=$SERVICE_PGPASS psql -d "$SERVICE_PGDB" -h "$PGHOST" -p "$PGPORT" -U "$SERVICE_PGUSER" -c "\conninfo"
 
-              # Update secret to signal that db has been created, and services can start
-              kubectl patch secret/{{ .Chart.Name }}-dbcreds -p '{"data":{"dbcreated":"dHJ1ZQo="}}'
-            fi
+            # Update secret to signal that db has been created, and services can start
+            kubectl patch secret/{{ .Chart.Name }}-dbcreds -p '{"data":{"dbcreated":"dHJ1ZQo="}}'
 {{- end}}
 {{- end }}
 

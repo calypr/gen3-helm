@@ -284,6 +284,15 @@ wts:
   # -- (bool) Whether to deploy the wts subchart.
   enabled: true
 
+syfon:
+  # -- (bool) Whether to deploy the syfon subchart.
+  enabled: false
+
+gecko:
+  qdrant:
+    # -- (bool) Whether Gecko should connect to Qdrant.
+    enabled: false
+
 # Disable persistence by default so we can spin up and down ephemeral environments
 postgresql:
   primary:
@@ -299,7 +308,7 @@ qdrant:
         secretKeyRef:
           name: qdrant-api-key-secret  # Name of the Kubernetes Secret from Step 1
           key: api-key
-  enabled: true
+  enabled: false
   replicaCount: 1
   resources:
     limits:
