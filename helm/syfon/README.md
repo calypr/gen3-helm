@@ -5,6 +5,7 @@ This chart deploys `syfon` with:
 - Syfon config mounted into the pod at `/etc/drs/config.yaml` from `config`
   using a Kubernetes Secret
 - DB credentials injected via secret env vars (`DRS_DB_*`)
+- A compatibility service-creds secret for legacy Fence/Sheepdog consumers
 - Optional PostgreSQL init job that mirrors indexd-style setup:
   - creates app DB user
   - creates app database
@@ -79,6 +80,9 @@ also set a complete `path` or explicit `bucket` plus `path_prefix`.
 ## Key Compatibility Notes
 
 - Secret keys mirror indexd credentials naming (`db_host`, `db_username`, `db_password`, `db_database`) with additional `db_port` and `db_sslmode`.
+- By default the chart also creates `indexd-service-creds` so existing Fence and
+  Sheepdog deployments can keep reading `fence` / `sheepdog` service passwords
+  after migrating the backend service to Syfon.
 - In `gen3` mode, `syfon` requires PostgreSQL.
 - The rendered Syfon config is stored as a Kubernetes Secret because it can
   contain bucket credentials and `credential_encryption.master_key`.

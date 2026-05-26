@@ -58,6 +58,13 @@ postgres:
     image: postgres:16
     waitTimeoutSeconds: 180
 
+serviceCreds:
+  enabled: true
+  secretName: indexd-service-creds
+  users:
+    fence: ""
+    sheepdog: ""
+
 resources: {}
 
 extraEnv: []
