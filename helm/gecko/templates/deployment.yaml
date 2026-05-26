@@ -17,9 +17,16 @@ spec:
       labels:
         {{- include "gecko.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.volumes }}
+      {{- if or .Values.gitMirrorStorage.enabled .Values.volumes }}
       volumes:
+        {{- if .Values.gitMirrorStorage.enabled }}
+        - name: git-mirror-storage
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-git-mirror" (include "gecko.fullname" .)) .Values.gitMirrorStorage.existingClaim }}
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -122,10 +129,18 @@ spec:
                   name: gecko-dbcreds
                   key: dbcreated
                   optional: false
+            - name: GIT_DATA_DIR
+              value: {{ if .Values.gitMirrorStorage.enabled }}{{ .Values.gitMirrorStorage.mountPath | quote }}{{ else }}"/tmp/gecko-git"{{ end }}
 
-          {{- with .Values.volumeMounts }}
+          {{- if or .Values.gitMirrorStorage.enabled .Values.volumeMounts }}
           volumeMounts:
-            {{- toYaml .Values.volumeMounts | nindent 12 }}  
+            {{- if .Values.gitMirrorStorage.enabled }}
+            - name: git-mirror-storage
+              mountPath: {{ .Values.gitMirrorStorage.mountPath | quote }}
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

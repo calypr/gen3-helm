@@ -33,9 +33,25 @@ data:
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS drs_object_controlled_access (
+      object_id TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS drs_object_alias (
       alias_id TEXT PRIMARY KEY,
       object_id TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS drs_object_browse_index (
+      object_id TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      normalized_path TEXT NOT NULL,
+      parent_path TEXT NOT NULL,
+      entry_name TEXT NOT NULL,
+      PRIMARY KEY (resource, object_id),
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
@@ -202,11 +218,32 @@ data:
     CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_idx
       ON drs_object_checksum(checksum);
 
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_idx
+      ON drs_object_controlled_access(object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_resource_idx
+      ON drs_object_controlled_access(resource);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_resource_object_id_idx
+      ON drs_object_controlled_access(resource, object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_resource_idx
+      ON drs_object_controlled_access(object_id, resource);
+
     CREATE INDEX IF NOT EXISTS drs_object_access_method_scope_idx
       ON drs_object_access_method(org, project);
 
     CREATE INDEX IF NOT EXISTS drs_object_alias_object_id_idx
       ON drs_object_alias(object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_object_id_idx
+      ON drs_object_browse_index(resource, parent_path, object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_entry_name_idx
+      ON drs_object_browse_index(resource, parent_path, entry_name);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_normalized_path_idx
+      ON drs_object_browse_index(resource, normalized_path);
 
     CREATE INDEX IF NOT EXISTS idx_bucket_scope_bucket
       ON bucket_scope(bucket);
@@ -258,6 +295,41 @@ data:
 
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_scope_time
       ON provider_transfer_event(organization, project, direction, event_time);
+
+    INSERT INTO drs_object_browse_index (object_id, resource, normalized_path, parent_path, entry_name)
+    SELECT
+      scoped.object_id,
+      scoped.resource,
+      scoped.normalized_path,
+      CASE
+        WHEN position('/' in scoped.normalized_path) = 0 THEN ''
+        ELSE regexp_replace(scoped.normalized_path, '/[^/]+$', '')
+      END AS parent_path,
+      regexp_replace(scoped.normalized_path, '^.*/', '') AS entry_name
+    FROM (
+      SELECT
+        ca.object_id,
+        ca.resource,
+        regexp_replace(
+          regexp_replace(
+            btrim(replace(COALESCE(o.name, ''), E'\\\\', '/'), '/'),
+            '/+',
+            '/',
+            'g'
+          ),
+          '^/+|/+$',
+          '',
+          'g'
+        ) AS normalized_path
+      FROM drs_object_controlled_access ca
+      INNER JOIN drs_object o ON o.id = ca.object_id
+    ) scoped
+    WHERE scoped.normalized_path <> ''
+      AND scoped.normalized_path !~ '(^|/)\.\.?(/|$)'
+    ON CONFLICT (resource, object_id) DO UPDATE SET
+      normalized_path = EXCLUDED.normalized_path,
+      parent_path = EXCLUDED.parent_path,
+      entry_name = EXCLUDED.entry_name;
 
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_actor_time
       ON provider_transfer_event(actor_email, actor_subject, event_time);

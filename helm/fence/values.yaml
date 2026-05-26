@@ -2029,20 +2029,6 @@ FENCE_CONFIG:
     port: 3128
 
   # //////////////////////////////////////////////////////////////////////////////////////
-  # MICROSERVICE PATHS
-  #   - Support `/data` endpoints & authz functionality
-  # //////////////////////////////////////////////////////////////////////////////////////
-  # url where indexd microservice is running (for signed urls primarily)
-  # NOTE: Leaving as null will force fence to default to {{BASE_URL}}/index
-  # example value: 'https://example.com/index'
-  INDEXD: http://indexd-service
-
-  # this is the username which fence uses to make authenticated requests to indexd
-  INDEXD_USERNAME: 'fence'
-  # this is the password which fence uses to make authenticated requests to indexd
-  INDEXD_PASSWORD: ''
-
-  # //////////////////////////////////////////////////////////////////////////////////////
   # AZURE STORAGE BLOB CONFIGURATION
   #   - Support Azure Blob Data Access Methods
   # //////////////////////////////////////////////////////////////////////////////////////

@@ -126,6 +126,25 @@ qdrant:
     # -- (string) Size of the local Qdrant PersistentVolume.
     size: 26Gi
 
+gitMirrorStorage:
+  # -- (bool) Whether to persist Gecko's local git mirrors in a PVC.
+  enabled: false
+  # -- (string) Directory inside the Gecko container where git mirrors are stored.
+  mountPath: /data/gecko-git
+  # -- (string) Existing PVC to use for git mirror storage. If empty and enabled, a PVC is created.
+  existingClaim: ""
+  # -- (list) Access modes for the git mirror PVC.
+  accessModes:
+    - ReadWriteOnce
+  # -- (string) StorageClass for the git mirror PVC. Leave empty to use the cluster default.
+  storageClass: ""
+  # -- (string) Requested size for the git mirror PVC.
+  size: 10Gi
+  # -- (map) Annotations to add to the git mirror PVC.
+  annotations: {}
+  # -- (map) Labels to add to the git mirror PVC.
+  labels: {}
+
 # -- (list) Gecko project configs. These seed config_schema.projects keyed as "<org_title>/<project_title>".
 projects: []
 # Example:
