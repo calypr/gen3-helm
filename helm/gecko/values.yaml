@@ -93,6 +93,11 @@ postgres:
   password:
   # -- (string) Will create a Database for the individual service to help with developing it.
   separate: false
+  initJob:
+    # -- (bool) Whether to run the Gecko DB init job.
+    enabled: true
+    # -- (string) Image used for DB initialization. Must include psql.
+    image: postgres:16
 
 # -- (map) Postgresql subchart settings if deployed separately option is set to "true".
 # Disable persistence by default so we can spin up and down ephemeral environments
@@ -120,6 +125,18 @@ qdrant:
     hostPath: /mnt/data/qdrant-local
     # -- (string) Size of the local Qdrant PersistentVolume.
     size: 26Gi
+
+# -- (list) Gecko project configs. These seed config_schema.projects keyed as "<org_title>/<project_title>".
+projects: []
+# Example:
+# projects:
+#   - title: BForePC
+#     contact_email: support@example.org
+#     src_repo: HTAN_INT-BForePC
+#     org_title: HTAN
+#     description: Private project description
+#     project_title: INT-BForePC
+#     icon_name: binoculars
 
 
 # -- (int) Number of replicas for the deployment.
@@ -232,7 +249,13 @@ volumeMounts: []
 env:
   # -- (string) The URL of the JSON Web Key Set (JWKS) endpoint for authentication
   - name: JWKS_ENDPOINT
-    value: "http://fence-service/.well-known/jwks"
+    value: ""
+  # -- (string) The base URL of Fence for GitHub App token exchange
+  - name: FENCE_BASE_URL
+    value: ""
+  # -- (string) The GitHub App installation URL, for example https://github.com/apps/<app-slug>/installations/new
+  - name: GITHUB_APP_INSTALL_URL
+    value: ""
 
 
 # Values to determine the labels that are used for the deployment, pod, etc.

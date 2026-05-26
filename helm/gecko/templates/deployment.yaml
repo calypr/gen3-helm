@@ -36,32 +36,30 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: http
           readinessProbe:
             httpGet:
               path: /health
-              port: 80
+              port: http
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          command: ["sh"]
-          args:
-            - "-c"
-            - |
-              set -e
-              # set env vars
-              #until false; do
-              #  sleep 5
-              # done
-              ./bin/gecko
-
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- range .Values.env }}
+            - name: {{ .name | quote }}
+              value: {{- if eq .name "JWKS_ENDPOINT" }}
+                {{ default (printf "https://%s/user/.well-known/jwks" $.Values.global.hostname) .value | quote }}
+              {{- else if eq .name "FENCE_BASE_URL" }}
+                {{ default (printf "https://%s/user" $.Values.global.hostname) .value | quote }}
+              {{- else }}
+                {{ .value | quote }}
+              {{- end }}
+            {{- end }}
             - name: GRIP_GRAPH
               valueFrom:
                 configMapKeyRef:

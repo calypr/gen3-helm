@@ -14,3 +14,7 @@ data:
   # Reads content from the chart filesystem at files/init-data/apps_page.json
   apps_page.json: |
 {{ .Files.Get "files/init-data/apps_page.json" | trim | nindent 4 }}
+
+  # Renders project configs from .Values.projects so deployment-specific/private project definitions stay out of the chart.
+  projects.json: |
+{{ .Values.projects | toPrettyJson | nindent 4 }}

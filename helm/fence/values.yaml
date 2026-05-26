@@ -329,11 +329,6 @@ env:
         optional: false
   - name: DB
     value: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):5432/$(PGDB)
-  - name: INDEXD_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: indexd-service-creds
-        key: fence
   - name: gen3Env
     valueFrom:
       configMapKeyRef:
@@ -1677,6 +1672,7 @@ FENCE_CONFIG:
     - "openid"
     - "user"
     - "data"
+    - "github_credentials"
     - "google_credentials"
     - "google_service_account"
     - "google_link"
@@ -1690,6 +1686,7 @@ FENCE_CONFIG:
     - "user"
     - "data"
     - "admin"
+    - "github_credentials"
     - "google_credentials"
     - "google_service_account"
     - "google_link"
@@ -1707,6 +1704,19 @@ FENCE_CONFIG:
     - "google_service_account"
     - "google_link"
     - "ga4gh_passport_v1"
+
+  # -- (map) GitHub App configuration for Fence-managed installation token brokering
+  GITHUB_APP:
+    # -- (string) GitHub App ID
+    app_id: ''
+    # -- (string) PEM-encoded GitHub App private key
+    private_key: ''
+    # -- (string) Optional path to a PEM file mounted in the container. Mutually exclusive with private_key.
+    private_key_file: ''
+    # -- (string) GitHub API base URL. Leave default for github.com, override for GitHub Enterprise.
+    api_base_url: 'https://api.github.com'
+    # -- (int) Timeout in seconds for outbound GitHub API requests
+    timeout_seconds: 30
 
   # //////////////////////////////////////////////////////////////////////////////////////
   # LOGIN
