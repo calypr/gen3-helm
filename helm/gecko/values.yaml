@@ -136,10 +136,15 @@ gitMirrorStorage:
   # -- (list) Access modes for the git mirror PVC.
   accessModes:
     - ReadWriteOnce
-  # -- (string) StorageClass for the git mirror PVC. Leave empty to use the cluster default.
-  storageClass: ""
+  # -- (string) StorageClass for the git mirror PV/PVC.
+  storageClass: gecko-git-manual-storage
   # -- (string) Requested size for the git mirror PVC.
   size: 10Gi
+  persistence:
+    # -- (bool) Whether to create a local PersistentVolume for git mirror storage.
+    enabled: true
+    # -- (string) Local path used by the git mirror PersistentVolume.
+    hostPath: /mnt/data/gecko-git
   # -- (map) Annotations to add to the git mirror PVC.
   annotations: {}
   # -- (map) Labels to add to the git mirror PVC.
