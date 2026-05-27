@@ -13,6 +13,7 @@ data:
       created_time TIMESTAMPTZ,
       updated_time TIMESTAMPTZ,
       name TEXT,
+      file_name TEXT,
       version TEXT,
       description TEXT
     );
@@ -44,6 +45,9 @@ data:
       object_id TEXT NOT NULL,
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
+
+    ALTER TABLE drs_object
+      ADD COLUMN IF NOT EXISTS file_name TEXT;
 
     CREATE TABLE IF NOT EXISTS drs_object_browse_index (
       object_id TEXT NOT NULL,
@@ -312,7 +316,7 @@ data:
         ca.resource,
         regexp_replace(
           regexp_replace(
-            btrim(replace(COALESCE(o.name, ''), E'\\\\', '/'), '/'),
+            btrim(replace(COALESCE(o.file_name, o.name, ''), E'\\', '/'), '/'),
             '/+',
             '/',
             'g'
