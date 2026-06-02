@@ -37,6 +37,27 @@ spec:
       serviceAccountName: {{ include "arborist.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.authzSnapshotCache.waitForRedis.enabled }}
+      initContainers:
+        - name: wait-for-authz-cache
+          image: "{{ .Values.authzSnapshotCache.waitForRedis.image }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.authzSnapshotCache.waitForRedis.secretName }}
+                  key: {{ .Values.authzSnapshotCache.waitForRedis.passwordKey }}
+                  optional: false
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until redis-cli -h {{ .Values.authzSnapshotCache.waitForRedis.host }} -p {{ .Values.authzSnapshotCache.waitForRedis.port }} -a "$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG; do
+                echo "waiting for authz cache redis at {{ .Values.authzSnapshotCache.waitForRedis.host }}:{{ .Values.authzSnapshotCache.waitForRedis.port }}"
+                sleep 2
+              done
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -68,11 +89,13 @@ spec:
               # set env vars
               export PGSSLMODE="disable"
               
+              {{- if .Values.migrations.enabled }}
               # bring the database schema up to the latest version
-              /go/src/github.com/uc-cdis/arborist/migrations/latest
+              {{ .Values.migrations.command }}
+              {{- end }}
 
               # run arborist
-              /go/src/github.com/uc-cdis/arborist/bin/arborist
+              /go/src/github.com/calypr/arborist/bin/arborist
           env:
             {{- if .Values.global.ddEnabled }}
             {{- include "common.datadogEnvVar" . | nindent 12 }}

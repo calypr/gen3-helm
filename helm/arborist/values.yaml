@@ -109,11 +109,20 @@ replicaCount: 1
 # -- (map) Docker image information.
 image:
   # -- (string) Docker repository.
-  repository: quay.io/cdis/arborist
+  repository: quay.io/ohsu-comp-bio/arborist
   # -- (string) Docker pull policy.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # -- (string) Overrides the image tag whose default is the chart appVersion.
   tag: ""
+
+# -- (map) Database migration settings. Arborist migrations are packaged in the
+# application image; deploying a new image with new migration files is enough for
+# this chart to apply them before starting Arborist.
+migrations:
+  # -- (bool) Whether to run Arborist database migrations at container startup.
+  enabled: true
+  # -- (string) Migration command inside the Arborist image.
+  command: /go/src/github.com/calypr/arborist/migrations/latest
 
 # -- (list) Docker image pull secrets.
 imagePullSecrets: []
@@ -214,7 +223,23 @@ env:
   # -- (string) The URL of the JSON Web Key Set (JWKS) endpoint for authentication
   - name: JWKS_ENDPOINT
     value: "http://fence-service/.well-known/jwks"
+  - name: AUTHZ_SNAPSHOT_CACHE_REDIS_URL
+    value: "redis://authz-cache-service:6379/0"
+  - name: AUTHZ_SNAPSHOT_CACHE_REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: authz-cache-credentials
+        key: redis-password
+        optional: false
 
+authzSnapshotCache:
+  waitForRedis:
+    enabled: true
+    image: "redis:7.2-alpine"
+    host: "authz-cache-service"
+    port: 6379
+    secretName: "authz-cache-credentials"
+    passwordKey: "redis-password"
 
 # Values to determine the labels that are used for the deployment, pod, etc.
 # -- (string) Valid options are "production" or "dev". If invalid option is set- the value will default to "dev".

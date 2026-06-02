@@ -63,6 +63,8 @@ spec:
                 {{ default (printf "https://%s/user/.well-known/jwks" $.Values.global.hostname) .value | quote }}
               {{- else if eq .name "FENCE_BASE_URL" }}
                 {{ default (printf "https://%s/user" $.Values.global.hostname) .value | quote }}
+              {{- else if eq .name "SYFON_DATA_API_BASE_URL" }}
+                {{ default (printf "https://%s/data" $.Values.global.hostname) .value | quote }}
               {{- else }}
                 {{ .value | quote }}
               {{- end }}
@@ -91,6 +93,20 @@ spec:
                   key: {{ .Values.qdrant.apiKeySecretKey | quote }}
                   optional: false
             {{- end }}
+            - name: GITHUB_APP_ID
+              value: {{ .Values.githubApp.id | quote }}
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-github-secrets" (include "gecko.fullname" .) | quote }}
+                  key: webhook-secret
+                  optional: true
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-github-secrets" (include "gecko.fullname" .) | quote }}
+                  key: app-private-key
+                  optional: true
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:

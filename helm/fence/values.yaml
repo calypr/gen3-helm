@@ -297,6 +297,12 @@ env:
         name: manifest-fence
         key: fence-config-public.yaml
         optional: true
+  - name: AUTHZ_SNAPSHOT_CACHE_REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: authz-cache-credentials
+        key: redis-password
+        optional: false
   - name: PGHOST
     valueFrom:
       secretKeyRef:
@@ -334,6 +340,15 @@ env:
       configMapKeyRef:
         name: manifest-global
         key: hostname
+
+authzSnapshotCache:
+  waitForRedis:
+    enabled: true
+    image: "redis:7.2-alpine"
+    host: "authz-cache-service"
+    port: 6379
+    secretName: "authz-cache-credentials"
+    passwordKey: "redis-password"
 
 # -- (list) Volumes to attach to the container.
 volumes:
@@ -2044,6 +2059,9 @@ FENCE_CONFIG:
 
   # url where authz microservice is running
   ARBORIST: http://arborist-service
+  AUTHZ_SNAPSHOT_CACHE_ENABLED: true
+  AUTHZ_SNAPSHOT_CACHE_REDIS_URL: redis://authz-cache-service:6379/0
+  AUTHZ_SNAPSHOT_CACHE_TTL_SECONDS: 3600
 
   # url where the audit-service is running
   AUDIT_SERVICE: 'http://audit-service'

@@ -56,6 +56,9 @@ spec:
         - name: revproxy-subconf
           configMap:
             name: revproxy-nginx-subconf
+        - name: revproxy-snippets
+          configMap:
+            name: revproxy-nginx-snippets
         - name: revproxy-ssl
           configMap:
             name: revproxy-nginx-ssl
@@ -147,6 +150,9 @@ spec:
           - name: "revproxy-subconf"
             readOnly: true
             mountPath: "/etc/nginx/gen3.conf"
+          - name: "revproxy-snippets"
+            readOnly: true
+            mountPath: "/etc/nginx/snippets"
           - name: "revproxy-ssl"
             readOnly: true
             mountPath: "/etc/nginx/ssl/service.crt"

@@ -277,9 +277,24 @@ env:
   # -- (string) The base URL of Fence for GitHub App token exchange
   - name: FENCE_BASE_URL
     value: ""
+  # -- (string) Syfon Data API base URL routed via revproxy (for example https://<hostname>/data)
+  - name: SYFON_DATA_API_BASE_URL
+    value: ""
   # -- (string) The GitHub App installation URL, for example https://github.com/apps/<app-slug>/installations/new
   - name: GITHUB_APP_INSTALL_URL
     value: ""
+
+# -- (map) GitHub App webhook settings for Gecko
+githubWebhook:
+  # -- (string) Shared secret configured in the GitHub App webhook settings
+  secret: ""
+
+# -- (map) Optional GitHub App credentials for installation repository reconcile
+githubApp:
+  # -- (string) GitHub App ID used to mint installation access tokens for reconcile
+  id: ""
+  # -- (string) GitHub App private key PEM used to mint installation access tokens for reconcile
+  privateKey: ""
 
 
 # Values to determine the labels that are used for the deployment, pod, etc.
