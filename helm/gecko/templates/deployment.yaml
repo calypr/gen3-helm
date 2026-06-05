@@ -39,7 +39,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: {{ include "gecko.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -93,20 +93,6 @@ spec:
                   key: {{ .Values.qdrant.apiKeySecretKey | quote }}
                   optional: false
             {{- end }}
-            - name: GITHUB_APP_ID
-              value: {{ .Values.githubApp.id | quote }}
-            - name: GITHUB_WEBHOOK_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-github-secrets" (include "gecko.fullname" .) | quote }}
-                  key: webhook-secret
-                  optional: true
-            - name: GITHUB_APP_PRIVATE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-github-secrets" (include "gecko.fullname" .) | quote }}
-                  key: app-private-key
-                  optional: true
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:

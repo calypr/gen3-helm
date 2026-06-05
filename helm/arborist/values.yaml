@@ -122,7 +122,7 @@ migrations:
   # -- (bool) Whether to run Arborist database migrations at container startup.
   enabled: true
   # -- (string) Migration command inside the Arborist image.
-  command: /go/src/github.com/calypr/arborist/migrations/latest
+  command: /app/migrations/latest
 
 # -- (list) Docker image pull secrets.
 imagePullSecrets: []

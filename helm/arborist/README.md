@@ -65,8 +65,8 @@ A Helm chart for gen3 arborist
 | image.repository | string | `"quay.io/ohsu-comp-bio/arborist"` | Docker repository. |
 | image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` | Docker image pull secrets. |
-| migrations | map | `{"command":"/go/src/github.com/calypr/arborist/migrations/latest","enabled":true}` | Database migration settings. Arborist migrations are packaged in the application image; deploying a new image with new migration files is enough for this chart to apply them before starting Arborist. |
-| migrations.command | string | `"/go/src/github.com/calypr/arborist/migrations/latest"` | Migration command inside the Arborist image. |
+| migrations | map | `{"command":"/app/migrations/latest","enabled":true}` | Database migration settings. Arborist migrations are packaged in the application image; deploying a new image with new migration files is enough for this chart to apply them before starting Arborist. |
+| migrations.command | string | `"/app/migrations/latest"` | Migration command inside the Arborist image. |
 | migrations.enabled | bool | `true` | Whether to run Arborist database migrations at container startup. |
 | nameOverride | string | `""` | Override the name of the chart. |
 | nodeSelector | map | `{}` | Node selector to apply to the pod |

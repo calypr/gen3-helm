@@ -95,7 +95,7 @@ spec:
               {{- end }}
 
               # run arborist
-              /go/src/github.com/calypr/arborist/bin/arborist
+              /usr/local/bin/arborist
           env:
             {{- if .Values.global.ddEnabled }}
             {{- include "common.datadogEnvVar" . | nindent 12 }}

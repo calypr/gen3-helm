@@ -27,7 +27,7 @@ spec:
       containers:
       - name: fence
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-        imagePullPolicy: Always
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
           {{- toYaml .Values.env | nindent 10 }}
         volumeMounts:
@@ -44,5 +44,7 @@ spec:
           # Script always succeeds if it runs (echo exits with 0)
           - |
             # can be removed once this is merged: https://github.com/uc-cdis/fence/pull/1096
-            fence-create sync --arborist http://arborist-service --yaml /var/www/fence/user.yaml
+            cd /fence
+            export PYTHONPATH=/fence${PYTHONPATH:+:$PYTHONPATH}
+            /fence/.venv/bin/python -m bin.fence_create sync --arborist http://arborist-service --yaml /var/www/fence/user.yaml
       restartPolicy: OnFailure
