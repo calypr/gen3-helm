@@ -31,8 +31,6 @@ spec:
               echo "Database ready, initializing..."
 
               psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" <<EOF
-              \c gecko_local
-
               CREATE SCHEMA IF NOT EXISTS config_schema;
               CREATE OR REPLACE FUNCTION create_config_table(table_name TEXT)
               RETURNS void AS '
