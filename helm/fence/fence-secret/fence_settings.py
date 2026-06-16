@@ -165,6 +165,4 @@ CIRRUS_CFG[
 
 DEFAULT_LOGIN_URL_REDIRECT_PARAM = "redirect"
 
-INDEXD = "http://indexd-service/"
-
 ARBORIST = "http://arborist-service/"
