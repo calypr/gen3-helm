@@ -4,9 +4,6 @@ metadata:
   name: guppy-deployment
   labels:
     {{- include "guppy.labels" . | nindent 4 }}
-    {{- if .Values.global.ddEnabled }}
-    {{- include "common.datadogLabels" . | nindent 4 }}
-    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -23,13 +20,27 @@ spec:
     metadata:
       labels:
       {{- include "guppy.selectorLabels" . | nindent 8 }}
+        {{- include "common.extraLabels" . | nindent 8 }}
         # gen3 networkpolicy labels
         netnolimit: 'yes'
         public: 'yes'
-        {{- if .Values.global.ddEnabled }}
-        {{- include "common.datadogLabels" . | nindent 8 }}
-        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/guppy_config.yaml") . | sha256sum }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
       {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
@@ -45,7 +56,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /_status
-              port: 8000
+              port: http
             initialDelaySeconds: 30
             periodSeconds: 60
             timeoutSeconds: 30
@@ -53,29 +64,27 @@ spec:
           readinessProbe:
             httpGet:
               path: /_status
-              port: 8000
+              port: http
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.service.targetPort }}
+              name: http
           env: 
-            {{- if .Values.global.ddEnabled }}
-            {{- include "common.datadogEnvVar" . | nindent 12 }}
-            {{- end }}
             - name: GUPPY_PORT
               value: "8000"
             - name: GUPPY_CONFIG_FILEPATH
               value: /guppy/guppy_config.json
             - name: GEN3_ES_ENDPOINT
-              value: {{ default "elasticsearch:9200"  .Values.esEndpoint }}
+              value: {{ default "gen3-elasticsearch-master:9200"  .Values.esEndpoint }}
             {{- with .Values.arboristUrl }}
             - name: GEN3_ARBORIST_ENDPOINT
               value: {{ . }}
             {{- end }}
             - name: TIER_ACCESS_LEVEL
-              value: {{ .Values.global.tierAccessLevel }}
+              value: {{ .Values.global.tierAccessLevel | quote }}
             - name: TIER_ACCESS_LIMIT
               value: {{ .Values.global.tierAccessLimit | quote }}
-
-
+            - name: NODE_ENV
+              value: production
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 10 }}

@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-framework-deployment
+  labels:
+    {{- include "frontend-framework.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "frontend-framework.selectorLabels" . | nindent 6 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 8 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configMap.yaml") . | sha256sum }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "frontend-framework.selectorLabels" . | nindent 8 }}
+        {{- include "common.extraLabels" . | nindent 8 }}
+        public: "yes"
+    spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken}}
+      {{- if .Values.customConfig.enabled }}
+      initContainers:
+        - name: config-puller
+          image: alpine/git
+          env:
+            - name: CONFIG_DIR
+              value: {{ .Values.customConfig.dir }}
+            - name: GIT_REPO
+              value: {{ .Values.customConfig.repo  }}
+            - name: GIT_BRANCH
+              value: {{ .Values.customConfig.branch }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting config puller initContainer"
+
+              mkdir -p /tmp/repo
+              cd /tmp/repo
+
+              echo "Cloning repo: ${GIT_REPO} (branch: ${GIT_BRANCH}) into /tmp/repo"
+              git clone --depth 1 --branch ${GIT_BRANCH} --filter=blob:none --sparse ${GIT_REPO} /tmp/repo
+
+              cd /tmp/repo
+
+              # Handle empty CONFIG_DIR (root checkout)
+              if [ -z "${CONFIG_DIR}" ]; then
+                echo "CONFIG_DIR is empty → disabling sparse checkout (full repo will be used)"
+                git sparse-checkout disable
+              else
+                echo "CONFIG_DIR='${CONFIG_DIR}' → enabling sparse checkout for this path"
+                git sparse-checkout set ${CONFIG_DIR}
+              fi
+
+              echo "Repository ready, starting file copy"
+
+              {{- if .Values.customConfig.dir }}
+              echo "Using customConfig.dir='{{ .Values.customConfig.dir }}'"
+              echo "Copying config from /tmp/repo/{{ .Values.customConfig.dir }}/config → /gen3/config"
+              cp -r /tmp/repo/{{ .Values.customConfig.dir }}/config/* /gen3/config
+
+              echo "Copying public from /tmp/repo/{{ .Values.customConfig.dir }}/public → /gen3/public"
+              cp -r /tmp/repo/{{ .Values.customConfig.dir }}/public/* /gen3/public
+              {{- else }}
+              echo "No customConfig.dir set → using repo root directories"
+              echo "Copying config from /tmp/repo/config → /gen3/config"
+              cp -r /tmp/repo/config/* /gen3/config
+
+              echo "Copying public from /tmp/repo/public → /gen3/public"
+              cp -r /tmp/repo/public/* /gen3/public
+              {{- end }}
+
+              echo "Config puller completed successfully"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /gen3/config
+            - name: public-volume
+              mountPath: /gen3/public
+          {{- end }}
+      containers:
+        - name: frontend-framework
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          livenessProbe:
+            httpGet:
+              {{- if eq "portal" .Values.global.frontendRoot }}
+              path: /ff
+              {{- else }}
+              path: /
+              {{- end }}
+              port: {{ .Values.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              {{- if eq "portal" .Values.global.frontendRoot }}
+              path: /ff
+              {{- else }}
+              path: /
+              {{- end }}
+              port: {{ .Values.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.port }}
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "frontend-framework.fullname" . }}-configmap
+                optional: true
+          env:
+              {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if eq "portal" .Values.global.frontendRoot }}
+            - name: BASE_PATH
+              value: /ff
+            {{- else}}
+            - name: NEXT_PUBLIC_PORTAL_BASENAME
+              value: /portal
+            {{- end }}
+          {{- if .Values.customConfig.enabled }}
+            - name: DATADOG_APPLICATION_ID
+              value: {{ .Values.env.DATADOG_APPLICATION_ID | quote }}
+            - name: DATADOG_CLIENT_TOKEN
+              value: {{ .Values.env.DATADOG_CLIENT_TOKEN | quote }}
+            - name: DATACOMMONS
+              value: {{ .Values.env.DATACOMMONS | quote }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /gen3/config
+            - name: public-volume
+              mountPath: /gen3/public
+          {{- end }}
+      volumes:
+        - name: config-volume
+          emptyDir: {}
+        - name: public-volume
+          emptyDir: {}

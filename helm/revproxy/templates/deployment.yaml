@@ -4,9 +4,6 @@ metadata:
   name: revproxy-deployment
   labels:
     {{- include "revproxy.labels" . | nindent 4 }}
-    {{- if .Values.global.ddEnabled }}
-    {{- include "common.datadogLabels" . | nindent 4 }}
-    {{- end }}
   annotations:
     gen3.io/network-ingress: "portal,sowerjob"
 spec:
@@ -23,19 +20,32 @@ spec:
   {{- end }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configMaps.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "revproxy.selectorLabels" . | nindent 8 }}
-        {{- if .Values.global.ddEnabled }}
-        {{- include "common.datadogLabels" . | nindent 8 }}
-        {{- end }}
+        {{- include "common.extraLabels" . | nindent 8 }}
         {{- if .Values.userhelperEnabled }}
         userhelper: "yes"
         {{- end}}
     spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -50,15 +60,18 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       automountServiceAccountToken: false
       volumes:
+        - name: nginx-tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - emptyDir: {}
+          name: nginx-logs
         - name: revproxy-conf
           configMap:
             name: revproxy-nginx-conf
         - name: revproxy-subconf
           configMap:
             name: revproxy-nginx-subconf
-        - name: revproxy-ssl
-          configMap:
-            name: revproxy-nginx-ssl
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -70,65 +83,49 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-          - containerPort: 80
+          - containerPort: {{ .Values.service.targetPort }}
+            name: http
           - containerPort: 443
           - containerPort: 6567
           livenessProbe:
             httpGet:
               path: /_status
-              port: 80
+              port: http
             initialDelaySeconds: 5
-            periodSeconds: 30
+            periodSeconds: 3000
           readinessProbe:
             httpGet:
               path: /_status
-              port: 80
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
-            {{- if .Values.global.ddEnabled }}
-            {{- include "common.datadogEnvVar" . | nindent 12 }}
-            {{- end }}
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: MAINTENANCE_MODE
-            valueFrom:
-              configMapKeyRef:
-                name: manifest-global
-                key: maintenance_mode
-                optional: true
+            value: {{ .Values.global.maintenanceMode | quote }}
           - name: FRONTEND_ROOT
-            valueFrom:
-              configMapKeyRef:
-                name: manifest-global
-                key: frontend_root
-                optional: true
+            value: {{ .Values.global.frontendRoot | quote }}
+          {{- if .Values.global.origins_allow_credentials }}
           - name: ORIGINS_ALLOW_CREDENTIALS
-            valueFrom:
-              configMapKeyRef:
-                name: manifest-global
-                key: origins_allow_credentials
-                optional: true
+            value: {{ .Values.global.origins_allow_credentials | quote }}
+          {{- end }}
+          {{- if .Values.global.cookieDomain }}
           - name: COOKIE_DOMAIN
-            valueFrom:
-              configMapKeyRef:
-                name: manifest-global
-                key: cookie_domain
-                optional: true
+            value: {{ .Values.global.cookieDomain | quote }}
+          {{- end }}
+          {{- if .Values.global.desNamespace }}
           - name: DES_NAMESPACE
-            valueFrom:
-              configMapKeyRef:
-                name: manifest-global
-                key: des_namespace
-                optional: true
+            value: {{ .Values.global.desNamespace | quote }}
+          {{- end }}
           - name: INDEXD_AUTHZ
             valueFrom:
               secretKeyRef:
                 name: gateway-g3auto
                 key: base64Authz.txt
-                optional: true  
+                optional: true
           - name: MDS_AUTHZ
             valueFrom:
               secretKeyRef:
@@ -136,6 +133,8 @@ spec:
                 key: base64Authz.txt
                 optional: true
           volumeMounts:
+          - mountPath: /var/log/nginx
+            name: nginx-logs
           - name: "revproxy-conf"
             readOnly: true
             mountPath: "/etc/nginx/nginx.conf"
@@ -147,14 +146,10 @@ spec:
           - name: "revproxy-subconf"
             readOnly: true
             mountPath: "/etc/nginx/gen3.conf"
-          - name: "revproxy-ssl"
-            readOnly: true
-            mountPath: "/etc/nginx/ssl/service.crt"
-            subPath: service.crt
-          - name: "revproxy-ssl"
-            readOnly: true
-            mountPath: "/etc/nginx/ssl/service.key"
-            subPath: service.key
+          - name: nginx-tmp
+            mountPath: /tmp
+          - name: nginx-cache
+            mountPath: /var/cache/nginx
           # - name: "modsec-conf"
           #   readOnly: true
           #   mountPath: "/etc/nginx/modsec"
@@ -203,7 +198,7 @@ spec:
                 echo "modsecurity on;" >> /etc/nginx/gen3_server_modsec.conf
                 echo "modsecurity_rules_file /etc/nginx/modsec/main.conf;" >> /etc/nginx/gen3_server_modsec.conf
               fi
-    
+
               exec nginx -g 'daemon off;'
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -4,10 +4,10 @@ metadata:
   name: ssjdispatcher
   labels:
     {{- include "ssjdispatcher.labels" . | nindent 4 }}
-    {{- if .Values.global.ddEnabled }}
-    {{- include "common.datadogLabels" . | nindent 4 }}
-    {{- end }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
       matchLabels:
         {{- include "ssjdispatcher.selectorLabels" . | nindent 8 }}
@@ -17,13 +17,28 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "ssjdispatcher.selectorLabels" . | nindent 8 }}
         netnolimit: "yes"
         public: "yes"
-        {{- if .Values.global.ddEnabled }}
-        {{- include "common.datadogLabels" . | nindent 8 }}
-        {{- end }}
+        {{- include "ssjdispatcher.selectorLabels" . | nindent 8 }}
+        {{- include "common.extraLabels" . | nindent 8 }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/ssjdispatcher-secret.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/manifest-ssjdispatcher.yaml") . | sha256sum }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
+      {{- end }}
     spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.affinity }}
@@ -41,9 +56,6 @@ spec:
           volumeMounts:
             {{- toYaml .Values.volumeMounts | nindent 12 }}
           env:
-            {{- if .Values.global.ddEnabled }}
-            {{- include "common.datadogEnvVar" . | nindent 12 }}
-            {{- end }}
             {{- with .Values.awsRegion  }}
             - name: AWS_REGION
               value: {{ . }}
@@ -52,10 +64,8 @@ spec:
             - name: AWS_STS_REGIONAL_ENDPOINTS
               value: {{ . }}
             {{- end }}
-            {{- with .Values.gen3Namespace  }}
             - name: GEN3_NAMESPACE
-              value: {{ . }}
-            {{- end }}
+              value: {{ .Values.gen3Namespace | default .Release.Namespace }}
             - name: JOB_IMAGES
               valueFrom:
                 configMapKeyRef:
@@ -63,19 +73,19 @@ spec:
                   key: job_images
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /_status
-              port: 8000
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 60
             timeoutSeconds: 30
           readinessProbe:
             httpGet:
               path: /_status
-              port: 8000
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

@@ -4,9 +4,6 @@ metadata:
   name: peregrine-deployment
   labels:
     {{- include "peregrine.labels" . | nindent 4 }}
-    {{- if .Values.global.ddEnabled }}
-    {{- include "common.datadogLabels" . | nindent 4 }}
-    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -16,16 +13,31 @@ spec:
       {{- include "peregrine.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/peregrine-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
+      {{- end }}
       labels:
+        public: "yes"
+        s3: "yes"
         {{- include "peregrine.selectorLabels" . | nindent 8 }}
-        {{- if .Values.global.ddEnabled }}
-        {{- include "common.datadogLabels" . | nindent 8 }}
-        {{- end }}
+        {{- include "common.extraLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
@@ -44,9 +56,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            {{- if .Values.global.ddEnabled }}
-            {{- include "common.datadogEnvVar" . | nindent 12 }}
-            {{- end }}
+          {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
             - name: FENCE_DB_USER
               valueFrom:
                 secretKeyRef:
@@ -79,6 +91,12 @@ spec:
                   optional: false
             - name: FLASK_SECRET_KEY
               value: "TODO: FIX THIS!!!"
+            - name: INDEXD_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: indexd-service-creds
+                  key: sheepdog
+                  optional: false
             - name: PGHOST
               valueFrom:
                 secretKeyRef:
@@ -112,49 +130,39 @@ spec:
             - name: GEN3_UWSGI_TIMEOUT
               value: "600"
             - name: DICTIONARY_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: manifest-global
-                  key: dictionary_url
-                  optional: true
+              value: {{ .Values.global.dictionaryUrl | quote }}
             - name: PUBLIC_DATASETS
-              valueFrom:
-                configMapKeyRef:
-                  name: manifest-global
-                  key: public_datasets
-                  optional: true
+              value: {{ .Values.global.publicDataSets | quote }}
+            {{- if .Values.global.indexdURL }}
             - name: INDEX_CLIENT_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: manifest-global
-                  key: indexd_url
-                  optional: true
+              value: {{ .Values.global.indexdURL | quote }}
+            {{- end }}
             - name: GRAPHQL_TIMEOUT
               valueFrom:
                 configMapKeyRef:
                   name: manifest-peregrine
                   key: peregrine_timeout
                   optional: true
-            - name: FENCE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: manifest-global
-                  key: fence_url
-                  optional: true
+            # {{- if eq .Values.global.dev false }}
+            # - name: FENCE_URL
+            #   value: https://{{ .Values.global.hostname }}/user
+            # {{- else }}
+            # - name: FENCE_URL
+            #   value: {{ .Values.global.fenceURL | quote }}
+            # {{- end }}
             - name: ARBORIST_URL
               value: {{ .Values.arborist_url }}
             - name: GEN3_SIDECAR
               value: "False"
             - name: CONF_HOSTNAME
-              value: {{ .Values.global.hostname }}
+              value: {{ .Values.global.hostname | quote }}
+          {{- with .Values.volumeMounts }}
           volumeMounts:
-            - name: "config-volume"
-              readOnly: true
-              mountPath: "/var/www/peregrine/wsgi.py"
-              subPath: "settings.py"
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
           livenessProbe:
             httpGet:

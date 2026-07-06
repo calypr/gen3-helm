@@ -4,9 +4,6 @@ metadata:
   name: ambassador-deployment
   labels:
     {{- include "ambassador.labels" . | nindent 4 }}
-    {{- if .Values.global.ddEnabled }}
-    {{- include "common.datadogLabels" . | nindent 4 }}
-    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -16,16 +13,31 @@ spec:
       {{- include "ambassador.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
+        {{- $metricsEnabled := .Values.metricsEnabled }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = .Values.global.metricsEnabled }}
+      {{- end }}
+      {{- if eq $metricsEnabled nil }}
+        {{- $metricsEnabled = true }}
+      {{- end }}
+
+      {{- if $metricsEnabled }}
+        {{- include "common.grafanaAnnotations" . | nindent 8 }}
+      {{- end }}
       labels:
+        netnolimit: "yes"
+        public: "yes"
+        userhelper: "yes"
         {{- include "ambassador.selectorLabels" . | nindent 8 }}
-        {{- if .Values.global.ddEnabled }}
-        {{- include "common.datadogLabels" . | nindent 8 }}
-        {{- end }}
+        {{- include "common.extraLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.global.topologySpread.enabled }}
+      {{- include "common.TopologySpread" . | nindent 6 }}
+      {{- end }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -49,20 +61,17 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            {{- if .Values.global.ddEnabled }}
-            {{- include "common.datadogEnvVar" . | nindent 10 }}
-            {{- end }}
           - name: AMBASSADOR_NAMESPACE
-            value: {{ if eq .Release.Namespace "default" -}}
-                  {{- printf "%s" .Values.userNamespace | quote -}}
-                {{- else -}}
-                  {{- printf "%s-%s" .Values.userNamespace .Release.Name | quote -}}
-                {{- end }}
+            value: {{- if .Values.jupyterNamespace }}
+              {{ .Values.jupyterNamespace | quote }}
+            {{- else }}
+              {{ printf "%s-%s" .Values.userNamespace .Release.Name | quote }}
+            {{- end }}          
           - name: AMBASSADOR_SINGLE_NAMESPACE
             value: "true"
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.service.targetPort }}
             - name: https
               containerPort: 8443
             - name: admin
