@@ -1,13 +1,23 @@
 Compute: {{ .Values.Compute }}
 
 Kubernetes:
-  Executor: {{ .Values.Kubernetes.Executor }}
   DisableReconciler: {{ .Values.Kubernetes.DisableReconciler }}
   DisableJobCleanup: {{ .Values.Kubernetes.DisableJobCleanup }}
   ReconcileRate: {{ .Values.Kubernetes.ReconcileRate }}
   Namespace: {{ .Release.Namespace }}
   JobsNamespace: {{ .Values.Kubernetes.JobsNamespace }}
   ServiceAccount: {{ .Values.Kubernetes.ServiceAccount }}
+  Resources:
+    Defaults:
+      Cpus: {{ .Values.Kubernetes.Resources.Defaults.Cpus }}
+      RamGb: {{ .Values.Kubernetes.Resources.Defaults.RamGb }}
+      DiskGb: {{ .Values.Kubernetes.Resources.Defaults.DiskGb }}
+    Limits:
+      Cpus: {{ .Values.Kubernetes.Resources.Limits.Cpus }}
+      RamGb: {{ .Values.Kubernetes.Resources.Limits.RamGb }}
+      DiskGb: {{ .Values.Kubernetes.Resources.Limits.DiskGb }}
+  Timeout:
+    duration: {{ .Values.Kubernetes.Timeout.duration }}
 
   NodeSelector:
     {{- if .Values.Kubernetes.NodeSelector }}
@@ -33,11 +43,11 @@ Kubernetes:
 
   # Worker Job
   WorkerTemplate: |
-{{ tpl (.Files.Get "files/worker-job.yaml") . | indent 4 }}
+{{ tpl ((.Values.Kubernetes.WorkerTemplate | default (.Files.Get "files/worker-job.yaml"))) . | indent 4 }}
 
   # Executor Job
   ExecutorTemplate: |
-{{ tpl (.Files.Get "files/executor-job.yaml") . | indent 4 }}
+{{ tpl ((.Values.Kubernetes.ExecutorTemplate | default (.Files.Get "files/executor-job.yaml"))) . | indent 4 }}
 
   # PV template
   PVTemplate: |
@@ -72,7 +82,7 @@ Server:
   HostName: "{{ .Values.Server.HostName }}"
   HTTPPort: "{{ .Values.Server.HTTPPort }}"
   RPCPort: "{{ .Values.Server.RPCPort }}"
-  DisableHTTPCache: {{ .Values.Server.DisableHttpCache }}
+  DisableHTTPCache: {{ .Values.Server.DisableHTTPCache }}
 
 RPCClient:
   ServerAddress: {{ .Values.RPCClient.ServerAddress }}
@@ -89,14 +99,14 @@ Scheduler:
     duration: {{ .Values.Scheduler.NodeInitTimeout.duration }}
 
 Node:
-  ID: {{ .Values.Node.Id }}
+  ID: {{ .Values.Node.ID }}
   Timeout:
     disabled: {{ .Values.Node.Timeout.disabled }}
   UpdateRate: {{ .Values.Node.UpdateRate }}
   Resources:
-    Cpus: {{ .Values.Node.Resources.cpus }}
-    RamGb: {{ .Values.Node.Resources.ramGb }}
-    DiskGb: {{ .Values.Node.Resources.diskGb }}
+    Cpus: {{ .Values.Node.Resources.Cpus }}
+    RamGb: {{ .Values.Node.Resources.RamGb }}
+    DiskGb: {{ .Values.Node.Resources.DiskGb }}
 
 Worker:
   WorkDir: {{ .Values.Worker.WorkDir }}
@@ -128,32 +138,23 @@ DynamoDB:
 
 Elastic:
   IndexPrefix: {{ .Values.Elastic.IndexPrefix }}
-  URL: {{ .Values.Elastic.Url }}
+  URL: {{ .Values.Elastic.URL }}
 
 Datastore:
   Project: {{ .Values.Datastore.Project }}
   CredentialsFile: {{ .Values.Datastore.CredentialsFile }}
 
-MongoDB:
-  Addrs:
-    {{- if .Values.MongoDB.Addrs }}
-      {{- range .Values.MongoDB.Addrs }}
-    - {{ . }}
-      {{- end }}
-    {{- else }}
-    - {{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local
-    {{- end }}
-  Database: {{ .Values.MongoDB.Database }}
-  Timeout:
-    duration: {{ .Values.MongoDB.Timeout.duration }}
-  Username: {{ .Values.MongoDB.Username }}
-  Password: {{ .Values.MongoDB.Password }}
-
 Postgres:
-  Host: {{ .Values.Postgres.Host }}
-  Database: {{ .Values.Postgres.Database }}
-  User: {{ .Values.Postgres.User }}
-  Password: {{ .Values.Postgres.Password }}
+  {{- if .Values.postgres.host }}
+  Host: {{ .Values.postgres.host }}
+  {{- else if .Values.global.dev }}
+  Host: {{ .Release.Name }}-postgresql
+  {{- else }}
+  Host: {{ .Values.global.postgres.master.host }}
+  {{- end }}
+  Database: {{ include "gen3.service-postgres" (dict "key" "database" "service" .Chart.Name "context" $) }}
+  User: {{ include "gen3.service-postgres" (dict "key" "username" "service" .Chart.Name "context" $) }}
+  Password: {{ include "gen3.service-postgres" (dict "key" "password" "service" .Chart.Name "context" $) }}
   AdminUser: {{ .Values.Postgres.AdminUser }}
   AdminPassword: {{ .Values.Postgres.AdminPassword }}
   Timeout:
