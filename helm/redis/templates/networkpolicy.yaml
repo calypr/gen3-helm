@@ -21,6 +21,10 @@ spec:
             matchLabels:
               app.kubernetes.io/instance: {{ .Release.Name }}
               app: arborist
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              app: gecko
       ports:
         - protocol: TCP
           port: {{ .Values.service.port }}

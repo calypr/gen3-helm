@@ -35,6 +35,27 @@ spec:
       serviceAccountName: {{ include "gecko.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if and .Values.storageChainAuditCache.enabled .Values.storageChainAuditCache.waitForRedis.enabled }}
+      initContainers:
+        - name: wait-for-audit-cache
+          image: {{ .Values.storageChainAuditCache.waitForRedis.image | quote }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storageChainAuditCache.passwordSecretName | quote }}
+                  key: {{ .Values.storageChainAuditCache.passwordKey | quote }}
+                  optional: false
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until redis-cli -h {{ .Values.storageChainAuditCache.waitForRedis.host }} -p {{ .Values.storageChainAuditCache.waitForRedis.port }} -a "$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG; do
+                echo "waiting for storage-chain audit cache redis at {{ .Values.storageChainAuditCache.waitForRedis.host }}:{{ .Values.storageChainAuditCache.waitForRedis.port }}"
+                sleep 2
+              done
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -57,6 +78,12 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
+            {{- if .Values.goRuntime.enabled }}
+            - name: GOMEMLIMIT
+              value: {{ .Values.goRuntime.memoryLimit | quote }}
+            - name: GOGC
+              value: {{ .Values.goRuntime.gcPercent | quote }}
+            {{- end }}
             {{- range .Values.env }}
             - name: {{ .name | quote }}
               value: {{- if eq .name "JWKS_ENDPOINT" }}
@@ -68,6 +95,23 @@ spec:
               {{- else }}
                 {{ .value | quote }}
               {{- end }}
+            {{- end }}
+            {{- if .Values.storageChainAuditCache.enabled }}
+            - name: STORAGE_CHAIN_AUDIT_CACHE_ENABLED
+              value: "true"
+            - name: STORAGE_CHAIN_AUDIT_CACHE_REDIS_URL
+              value: {{ .Values.storageChainAuditCache.redisUrl | quote }}
+            - name: STORAGE_CHAIN_AUDIT_CACHE_TTL_SECONDS
+              value: {{ .Values.storageChainAuditCache.ttlSeconds | quote }}
+            - name: STORAGE_CHAIN_AUDIT_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storageChainAuditCache.passwordSecretName | quote }}
+                  key: {{ .Values.storageChainAuditCache.passwordKey | quote }}
+                  optional: false
+            {{- else }}
+            - name: STORAGE_CHAIN_AUDIT_CACHE_ENABLED
+              value: "false"
             {{- end }}
             - name: GRIP_GRAPH
               valueFrom:
