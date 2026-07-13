@@ -5,6 +5,7 @@ This chart deploys `syfon` with:
 - Syfon config mounted into the pod at `/etc/drs/config.yaml` from `config`
   using a Kubernetes Secret
 - DB credentials injected via secret env vars (`DRS_DB_*`)
+- A compatibility service-creds secret for legacy Fence/Sheepdog consumers
 - Optional PostgreSQL init job that mirrors indexd-style setup:
   - creates app DB user
   - creates app database
@@ -39,7 +40,7 @@ config:
     default_expiry_seconds: 900
   credential_encryption:
     master_key: base64-or-hex-or-32-byte-key
-  s3_credentials:
+  buckets:
     - bucket: cbds
       provider: s3
       region: us-east-1
@@ -48,37 +49,100 @@ config:
       secret_key: secret-key
       resources:
         - organization: cbds
-          project: training
           org_path: programs/cbds
-          project_path: projects/training
+          projects:
+            - project_id: training
+              project_path: projects/training
   bucket_scopes:
     - organization: cbds
       project_id: training
       bucket: cbds
-      org_path: programs/cbds
-      project_path: projects/training
+      path_prefix: programs/cbds/projects/training
 ```
 
-Configured `s3_credentials` are loaded by the Syfon server on startup. Syfon
-requires a credential encryption key for non-empty bucket credentials; set
+Legacy bucket-keyed config remains valid:
+
+```yaml
+config:
+  s3_credentials:
+    - bucket: cbds
+      provider: s3
+      region: us-east-1
+      access_key: access-key
+      secret_key: secret-key
+  bucket_scopes:
+    - organization: cbds
+      project_id: training
+      bucket: cbds
+```
+
+Configured `buckets` are loaded by the Syfon server on startup. Operators use
+the physical `bucket` name in config and API requests. Syfon handles any
+internal database keying itself from the non-secret credential fields, and
+`secret_key` rotation does not change that internal key.
+
+Syfon requires a credential encryption key for non-empty bucket credentials; set
 `credential_encryption.master_key` in the same config block. The key may be a
 32-byte raw string, a 64-character hex string, or base64-encoded 32-byte key.
 
 Configured `bucket_scopes` are loaded on startup too. `organization` and
-`project_id` are the Gen3 authz labels. `organization_sub_path` /
-`project_sub_path` are storage-layout prefixes, and the chart also accepts the
-shorter aliases `org_path` / `project_path` and normalizes them in the rendered
-config. You can define these scopes either as top-level `bucket_scopes` or
-inline under each `s3_credentials[*].resources` entry. Inline resource entries
-use `organization`, `project`, `org_path`, and `project_path`; the chart
-attaches the parent bucket and renders the final server config as normal
-`bucket_scopes`. Syfon stores the full scope prefix and prepends that prefix
-when signing imported record URLs that are relative to the bucket root. You can
-also set a complete `path` or explicit `bucket` plus `path_prefix`.
+`project_id` are the Gen3 authz labels. Scopes reference the physical `bucket`
+and set `path_prefix` when the project should write below a specific key prefix.
+`organization_sub_path` / `project_sub_path` are storage-layout prefixes, and
+inline `buckets[*].resources` entries can still derive normal `bucket_scopes`.
+If the same physical bucket is configured more than once with different
+credentials, define scopes inline under the intended `buckets[*].resources`
+entry so the scope is unambiguous without exposing internal identity fields.
+
+Migration rule: leave existing `bucket` references in place. Do not add any
+extra credential identifier values to values.yaml.
+
+## Legacy Credential Cleanup
+
+Older Syfon deployments used the physical bucket name as the database
+`s3_credential.credential_id`. Current Syfon derives a stable internal
+credential ID from non-secret credential fields. After switching to the derived
+ID model, a database can temporarily contain both rows:
+
+- legacy row: `credential_id = bucket`
+- current row: derived credential ID for the same physical bucket
+
+If the legacy row was encrypted with an old `credential_encryption.master_key`,
+`GET /data/buckets` will fail while listing credentials. Use the chart helper
+script to clean this up.
+
+Dry-run first:
+
+```bash
+KUBECTL=kc ./helm/syfon/scripts/cleanup-legacy-credential-ids.sh \
+  --namespace default \
+  --db-host local-postgresql \
+  --db-name syfon_db \
+  --secret syfon-db-admin
+```
+
+Apply:
+
+```bash
+KUBECTL=kc ./helm/syfon/scripts/cleanup-legacy-credential-ids.sh \
+  --namespace default \
+  --db-host local-postgresql \
+  --db-name syfon_db \
+  --secret syfon-db-admin \
+  --apply
+```
+
+The script is intentionally conservative. It only remaps `bucket_scope` rows and
+deletes legacy credential rows when exactly one replacement credential exists
+for the same physical bucket. Ambiguous buckets are skipped and must be reviewed
+manually.
 
 ## Key Compatibility Notes
 
 - Secret keys mirror indexd credentials naming (`db_host`, `db_username`, `db_password`, `db_database`) with additional `db_port` and `db_sslmode`.
+- By default the chart also creates `indexd-service-creds` so existing Fence and
+  Sheepdog deployments can keep reading `fence` / `sheepdog` service passwords
+  after migrating the backend service to Syfon.
 - In `gen3` mode, `syfon` requires PostgreSQL.
 - The rendered Syfon config is stored as a Kubernetes Secret because it can
   contain bucket credentials and `credential_encryption.master_key`.

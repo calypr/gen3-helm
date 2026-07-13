@@ -74,6 +74,10 @@ spec:
                 cp /var/run/fence-secrets/fence-config-secret.yaml /var/www/fence/fence-config.yaml
               fi
 
+              if [[ -n "${AUTHZ_SNAPSHOT_CACHE_REDIS_PASSWORD:-""}" ]]; then
+                python -c $'import os, yaml\npath = "/var/www/fence/fence-config.yaml"\nwith open(path) as f:\n    data = yaml.safe_load(f) or {}\nurl = data.get("AUTHZ_SNAPSHOT_CACHE_REDIS_URL")\npassword = os.environ.get("AUTHZ_SNAPSHOT_CACHE_REDIS_PASSWORD", "")\nif url and password and url.startswith("redis://") and "@" not in url:\n    data["AUTHZ_SNAPSHOT_CACHE_REDIS_URL"] = f"redis://:{password}@{url[8:]}"\n    with open(path, "w") as f:\n        yaml.safe_dump(data, f, sort_keys=False)'
+              fi
+
               if [[ -f /var/run/fence-secrets/jwt_private_key.pem ]]; then
                 mkdir -p /fence/keys/key
                 cp /var/run/fence-secrets/jwt_private_key.pem /fence/keys/key/jwt_private_key.pem
@@ -90,6 +94,26 @@ spec:
           volumeMounts:
             {{- toYaml .Values.volumeMounts | nindent 12 }}
       initContainers:
+        {{- if .Values.authzSnapshotCache.waitForRedis.enabled }}
+        - name: wait-for-authz-cache
+          image: "{{ .Values.authzSnapshotCache.waitForRedis.image }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.authzSnapshotCache.waitForRedis.secretName }}
+                  key: {{ .Values.authzSnapshotCache.waitForRedis.passwordKey }}
+                  optional: false
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until redis-cli -h {{ .Values.authzSnapshotCache.waitForRedis.host }} -p {{ .Values.authzSnapshotCache.waitForRedis.port }} -a "$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG; do
+                echo "waiting for authz cache redis at {{ .Values.authzSnapshotCache.waitForRedis.host }}:{{ .Values.authzSnapshotCache.waitForRedis.port }}"
+                sleep 2
+              done
+        {{- end }}
         - name: fence-init
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}

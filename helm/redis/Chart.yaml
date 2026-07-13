@@ -1,0 +1,11 @@
+apiVersion: v2
+name: redis
+description: A Helm chart for in-cluster Redis used by shared authz snapshot caching
+type: application
+version: 0.1.0
+appVersion: "7.2"
+
+dependencies:
+- name: common
+  version: 0.1.10
+  repository: file://../common

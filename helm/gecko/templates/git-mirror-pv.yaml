@@ -1,0 +1,20 @@
+{{- if and .Values.gitMirrorStorage.enabled .Values.gitMirrorStorage.persistence.enabled (not .Values.gitMirrorStorage.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "gecko.fullname" . }}-git-mirror-pv
+  labels:
+    app.kubernetes.io/managed-by: "Helm"
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: "default"
+spec:
+  capacity:
+    storage: {{ .Values.gitMirrorStorage.size | quote }}
+  accessModes:
+    {{- toYaml .Values.gitMirrorStorage.accessModes | nindent 4 }}
+  storageClassName: {{ .Values.gitMirrorStorage.storageClass | quote }}
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ .Values.gitMirrorStorage.persistence.hostPath | quote }}
+{{- end }}

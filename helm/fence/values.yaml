@@ -297,6 +297,12 @@ env:
         name: manifest-fence
         key: fence-config-public.yaml
         optional: true
+  - name: AUTHZ_SNAPSHOT_CACHE_REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: authz-cache-credentials
+        key: redis-password
+        optional: false
   - name: PGHOST
     valueFrom:
       secretKeyRef:
@@ -329,16 +335,20 @@ env:
         optional: false
   - name: DB
     value: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):5432/$(PGDB)
-  - name: INDEXD_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: indexd-service-creds
-        key: fence
   - name: gen3Env
     valueFrom:
       configMapKeyRef:
         name: manifest-global
         key: hostname
+
+authzSnapshotCache:
+  waitForRedis:
+    enabled: true
+    image: "redis:7.2-alpine"
+    host: "authz-cache-service"
+    port: 6379
+    secretName: "authz-cache-credentials"
+    passwordKey: "redis-password"
 
 # -- (list) Volumes to attach to the container.
 volumes:
@@ -1677,6 +1687,7 @@ FENCE_CONFIG:
     - "openid"
     - "user"
     - "data"
+    - "github_credentials"
     - "google_credentials"
     - "google_service_account"
     - "google_link"
@@ -1690,6 +1701,7 @@ FENCE_CONFIG:
     - "user"
     - "data"
     - "admin"
+    - "github_credentials"
     - "google_credentials"
     - "google_service_account"
     - "google_link"
@@ -1707,6 +1719,19 @@ FENCE_CONFIG:
     - "google_service_account"
     - "google_link"
     - "ga4gh_passport_v1"
+
+  # -- (map) GitHub App configuration for Fence-managed installation token brokering
+  GITHUB_APP:
+    # -- (string) GitHub App ID
+    app_id: ''
+    # -- (string) PEM-encoded GitHub App private key
+    private_key: ''
+    # -- (string) Optional path to a PEM file mounted in the container. Mutually exclusive with private_key.
+    private_key_file: ''
+    # -- (string) GitHub API base URL. Leave default for github.com, override for GitHub Enterprise.
+    api_base_url: 'https://api.github.com'
+    # -- (int) Timeout in seconds for outbound GitHub API requests
+    timeout_seconds: 30
 
   # //////////////////////////////////////////////////////////////////////////////////////
   # LOGIN
@@ -2019,20 +2044,6 @@ FENCE_CONFIG:
     port: 3128
 
   # //////////////////////////////////////////////////////////////////////////////////////
-  # MICROSERVICE PATHS
-  #   - Support `/data` endpoints & authz functionality
-  # //////////////////////////////////////////////////////////////////////////////////////
-  # url where indexd microservice is running (for signed urls primarily)
-  # NOTE: Leaving as null will force fence to default to {{BASE_URL}}/index
-  # example value: 'https://example.com/index'
-  INDEXD: http://indexd-service
-
-  # this is the username which fence uses to make authenticated requests to indexd
-  INDEXD_USERNAME: 'fence'
-  # this is the password which fence uses to make authenticated requests to indexd
-  INDEXD_PASSWORD: ''
-
-  # //////////////////////////////////////////////////////////////////////////////////////
   # AZURE STORAGE BLOB CONFIGURATION
   #   - Support Azure Blob Data Access Methods
   # //////////////////////////////////////////////////////////////////////////////////////
@@ -2048,6 +2059,9 @@ FENCE_CONFIG:
 
   # url where authz microservice is running
   ARBORIST: http://arborist-service
+  AUTHZ_SNAPSHOT_CACHE_ENABLED: true
+  AUTHZ_SNAPSHOT_CACHE_REDIS_URL: redis://authz-cache-service:6379/0
+  AUTHZ_SNAPSHOT_CACHE_TTL_SECONDS: 3600
 
   # url where the audit-service is running
   AUDIT_SERVICE: 'http://audit-service'

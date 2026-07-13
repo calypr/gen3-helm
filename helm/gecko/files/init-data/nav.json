@@ -53,20 +53,6 @@
         "perms": null
       },
       {
-        "title": "Upload",
-        "description": "Upload local files into authorized storage.",
-        "icon": "/icons/apps/Upload.svg",
-        "href": "/upload",
-        "perms": ""
-      },
-      {
-        "title": "Directory Structure",
-        "description": "Search for files via a tree based interactive search",
-        "icon": "/icons/binary-tree.svg",
-        "href": "/Browser",
-        "perms": null
-      },
-      {
         "title": "File Summary",
         "description": "Overview of file system usage",
         "icon": "/icons/file.svg",

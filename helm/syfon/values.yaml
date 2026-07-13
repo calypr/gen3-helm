@@ -27,13 +27,24 @@ config:
   signing:
     default_expiry_seconds: 900
   credential_encryption: {}
-  # Preferred Syfon config shape. Each bucket may carry nested org/project routing
-  # resources, which Syfon flattens into runtime bucket scope records on startup.
+  # Preferred Syfon config shape. Buckets are credentials; Syfon derives the
+  # internal credential key from provider/endpoint/bucket/region/access_key.
   buckets: []
-  # Legacy inputs still accepted by Syfon, but the chart no longer synthesizes
-  # bucket_scopes from credential resources.
+  # Legacy inputs are still accepted by Syfon. bucket_scopes use physical bucket
+  # plus organization/project_id/path_prefix.
   s3_credentials: []
   bucket_scopes: []
+
+# Backward-compatible shorthand accepted by the chart and rendered into
+# config.credential_encryption. Prefer config.credential_encryption for new
+# values, but existing local values often set this at syfon.credential_encryption.
+credential_encryption: {}
+
+credentialEncryption:
+  # Refuse to deploy without a stable credential encryption key. Without this,
+  # Syfon falls back to /app/.syfon-credential-kek, which is pod-local unless the
+  # operator explicitly persists it.
+  requireStableKey: true
 
 postgres:
   app:
@@ -57,6 +68,13 @@ postgres:
     enabled: true
     image: postgres:16
     waitTimeoutSeconds: 180
+
+serviceCreds:
+  enabled: true
+  secretName: indexd-service-creds
+  users:
+    fence: ""
+    sheepdog: ""
 
 resources: {}
 

@@ -93,6 +93,11 @@ postgres:
   password:
   # -- (string) Will create a Database for the individual service to help with developing it.
   separate: false
+  initJob:
+    # -- (bool) Whether to run the Gecko DB init job.
+    enabled: true
+    # -- (string) Image used for DB initialization. Must include psql.
+    image: postgres:16
 
 # -- (map) Postgresql subchart settings if deployed separately option is set to "true".
 # Disable persistence by default so we can spin up and down ephemeral environments
@@ -121,6 +126,42 @@ qdrant:
     # -- (string) Size of the local Qdrant PersistentVolume.
     size: 26Gi
 
+gitMirrorStorage:
+  # -- (bool) Whether to persist Gecko's local git mirrors in a PVC.
+  enabled: false
+  # -- (string) Directory inside the Gecko container where git mirrors are stored.
+  mountPath: /data/gecko-git
+  # -- (string) Existing PVC to use for git mirror storage. If empty and enabled, a PVC is created.
+  existingClaim: ""
+  # -- (list) Access modes for the git mirror PVC.
+  accessModes:
+    - ReadWriteOnce
+  # -- (string) StorageClass for the git mirror PV/PVC.
+  storageClass: gecko-git-manual-storage
+  # -- (string) Requested size for the git mirror PVC.
+  size: 10Gi
+  persistence:
+    # -- (bool) Whether to create a local PersistentVolume for git mirror storage.
+    enabled: true
+    # -- (string) Local path used by the git mirror PersistentVolume.
+    hostPath: /mnt/data/gecko-git
+  # -- (map) Annotations to add to the git mirror PVC.
+  annotations: {}
+  # -- (map) Labels to add to the git mirror PVC.
+  labels: {}
+
+# -- (list) Gecko project configs. These seed config_schema.projects keyed as "<org_title>/<project_title>".
+projects: []
+# Example:
+# projects:
+#   - title: BForePC
+#     contact_email: support@example.org
+#     src_repo: HTAN_INT-BForePC
+#     org_title: HTAN
+#     description: Private project description
+#     project_title: INT-BForePC
+#     icon_name: binoculars
+
 
 # -- (int) Number of replicas for the deployment.
 replicaCount: 1
@@ -133,6 +174,8 @@ image:
   pullPolicy: IfNotPresent
   # -- (string) Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
+  # -- (string) Optional image digest. When set, takes precedence over tag.
+  digest: ""
 
 # -- (list) Docker image pull secrets.
 imagePullSecrets: []
@@ -190,15 +233,24 @@ resources:
   # -- (map) The amount of resources that the container requests
   requests:
     # -- (string) The amount of CPU requested
-    cpu: 0.1
+    cpu: 200m
     # -- (string) The amount of memory requested
-    memory: 12Mi
+    memory: 256Mi
   # -- (map) The maximum amount of resources that the container is allowed to use
   limits:
     # -- (string) The maximum amount of CPU the container can use
-    cpu: 1.0
+    cpu: 2
     # -- (string) The maximum amount of memory the container can use
-    memory: 512Mi
+    memory: 4Gi
+
+# -- (map) Go runtime memory controls for Gecko. Keep memoryLimit below resources.limits.memory so Go GC starts before Kubernetes OOM kills the pod.
+goRuntime:
+  # -- (bool) Whether to inject Go runtime memory control environment variables.
+  enabled: true
+  # -- (string) Soft Go memory limit. For the default 4Gi pod limit this leaves headroom for non-Go heap memory and JSON/socket buffers.
+  memoryLimit: 3400MiB
+  # -- (string) Go GC target percentage. Lower values trade CPU for lower peak memory during large audits.
+  gcPercent: "75"
 
 # -- (map) Configuration for autoscaling the number of replicas
 autoscaling:
@@ -232,7 +284,34 @@ volumeMounts: []
 env:
   # -- (string) The URL of the JSON Web Key Set (JWKS) endpoint for authentication
   - name: JWKS_ENDPOINT
-    value: "http://fence-service/.well-known/jwks"
+    value: ""
+  # -- (string) The base URL of Fence for GitHub App token exchange
+  - name: FENCE_BASE_URL
+    value: ""
+  # -- (string) Syfon Data API base URL routed via revproxy (for example https://<hostname>/data)
+  - name: SYFON_DATA_API_BASE_URL
+    value: ""
+
+storageChainAuditCache:
+  # -- (bool) Whether Gecko should cache completed storage-chain audit responses.
+  enabled: true
+  # -- (string) Redis URL for completed storage-chain audit response cache.
+  redisUrl: redis://authz-cache-service:6379/0
+  # -- (int) Completed storage-chain audit response cache TTL in seconds.
+  ttlSeconds: 86400
+  # -- (string) Secret containing the Redis password.
+  passwordSecretName: authz-cache-credentials
+  # -- (string) Key in the Redis password secret.
+  passwordKey: redis-password
+  waitForRedis:
+    # -- (bool) Whether to wait for Redis before starting Gecko.
+    enabled: true
+    # -- (string) Redis CLI image used by the wait init container.
+    image: "redis:7.2-alpine"
+    # -- (string) Redis host to wait for.
+    host: authz-cache-service
+    # -- (int) Redis port to wait for.
+    port: 6379
 
 
 # Values to determine the labels that are used for the deployment, pod, etc.

@@ -1,5 +1,20 @@
-# Kubernetes-specifc Settings
+# Kubernetes-specific settings
 replicaCount: 1
+
+# Global configuration shared with the Gen3 umbrella chart.
+global:
+  dev: true
+  postgres:
+    dbCreate: true
+    externalSecret: ""
+    master:
+      host:
+      username: postgres
+      password:
+      port: "5432"
+  externalSecrets:
+    deploy: false
+    dbCreate: false
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
@@ -21,45 +36,27 @@ image:
 labels:
   app: funnel
 
-# Default Funnel Server (Task Database)
-# Note: This is a non-persistent database for testing/demo purposes.
-postgresql:
-  enabled: true
-  global:
-    postgresql:
-      auth:
-        database: funnel
-        username: funnel
-        password: example
-        postgresPassword: example
-  primary:
-    persistence:
-      enabled: false
-
-mongodb:
-  enabled: false
-  app: funnel-mongodb
-  commonLabels:
-    app: funnel-mongodb
-  image:
-    registry: public.ecr.aws
-  architecture: standalone
-  auth:
-    enabled: true
-    rootUser: example
-    rootPassword: example
-  persistence:
-    enabled: false
-    size: 1Gi
+# Funnel is configured to use Gen3-managed PostgreSQL. The previous MongoDB
+# chart dependency was removed because MongoDB appears unused in this deployment
+# path; runtime PostgreSQL connectivity should be validated in-cluster.
+postgres:
+  # -- (bool) Whether the database should be created. Defaults to global.postgres.dbCreate.
+  dbCreate:
+  # -- (string) Hostname for Postgres. Defaults to global.postgres.master.host.
+  host:
+  # -- (string) Database name for Funnel.
+  database: funnel
+  # -- (string) Username for Funnel.
+  username: funnel
+  # -- (string) Port for Postgres.
+  port: "5432"
+  # -- (string) Password for Postgres. Override this for production deployments.
+  password: example
 
 rbac:
   create: true
 
-# Backoff/Completions for Worker + Executor Jobs
-backoffLimit: 1
-completions: 1
-
-# Resource Requests/Limits for Worker + Executor Jobs
+# Resource Requests/Limits for worker jobs and server pods.
 resources:
   requests:
     cpu: 100m
@@ -89,14 +86,14 @@ storage:
   provisioner: s3.csi.aws.com
   createStorageClass: true
 
-# Funnel Default Settings (with BoltDB replaced with MongoDB)
+# Funnel default settings configured for Gen3-managed PostgreSQL.
 #
 # These are passed into `files/server-config.yaml` and made available to the deployment via `server-configmap.yaml`
 #
 # - Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
 
 # The name of the active server database backend
-# Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
+# Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb, postgres
 Database: postgres
 
 # The name of the active compute backend
@@ -104,7 +101,7 @@ Database: postgres
 Compute: kubernetes
 
 # The name of the active event writer backend(s).
-# Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
+# Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, postgres, kafka
 EventWriters:
   - postgres
   - log
@@ -252,23 +249,6 @@ Datastore:
   # from the environment.
   CredentialsFile: ""
 
-MongoDB:
-  # Addrs holds the addresses for the seed servers.
-  # K8s Note: These are computed dynamically in templates (in `server-configmap.yaml`) so that users
-  # don't have to manually set them.
-  Addrs: []
-  # Database is the database name used within MongoDB to store funnel data.
-  Database: funnel
-  # Timeout is the amount of time to wait for a server to respond when
-  # first connecting and on follow up operations in the session. If
-  # timeout is zero, the call may block forever waiting for a connection
-  # to be established.
-  Timeout:
-    duration: 300s
-  # Username and Password inform the credentials for the initial authentication
-  # done on the database defined by the Database field.
-  Username: example
-
 Postgres:
   Host: funnel-postgresql.default.svc.cluster.local
   Database: funnel
@@ -409,8 +389,22 @@ AWSBatch:
 
 # Kubernetes describes the configuration for the Kubernetes compute backend.
 Kubernetes:
-  # The executor used to execute tasks. Available executors: docker, kubernetes
-  Executor: "kubernetes"
+  Executor:
+    Annotations: {}
+    PriorityClassName: ""
+    restartPolicy: OnFailure
+    # Setting backoffLimit to 0 means no retries.
+    backoffLimit: 0
+    # Setting completions to 1 means the job completes after one successful execution.
+    completions: 1
+
+  Worker:
+    Annotations: {}
+    PriorityClassName: ""
+    restartPolicy: Never
+    backoffLimit: 0
+    completions: 1
+
   # Turn off task state reconciler. When enabled, Funnel communicates with Kubernetes
   # to find tasks that are stuck in a queued state or errored and
   # updates the task state accordingly.
@@ -425,6 +419,8 @@ Kubernetes:
   JobsNamespace: ""
   # Kubernetes ServiceAccount to use for the job
   ServiceAccount: ""
+  Timeout:
+    duration: 30s
   # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
   WorkerTemplate: ""
   # NodeSelector (scheduling)
@@ -436,6 +432,28 @@ Kubernetes:
   ExecutorTemplate: ""
   PVTemplate: ""
   PVCTemplate: ""
+
+  Resources:
+    Defaults:
+      Cpus: 1000m
+      RamGb: 512Mi
+      DiskGb: 512Mi
+    Limits:
+      Cpus: 8000m
+      RamGb: 4096Mi
+      DiskGb: 4096Mi
+
+# cleanup configures an optional CronJob that runs `funnel kubernetes cleanup`
+# to delete orphaned Funnel-managed Kubernetes resources. It is intentionally
+# turned off by default; set cleanup.enabled=true to enable it.
+cleanup:
+  enabled: false
+  # Leave empty to derive the schedule from Kubernetes.ReconcileRate. Set a
+  # standard 5-field cron expression to override, e.g. "*/15 * * * *".
+  schedule: ""
+  # Offset the start minute so cleanup jobs in different namespaces do not all
+  # fire at the same instant. Must be 0-59.
+  scheduleOffsetMinutes: 0
 
 # -------------------------------------------------------------------------------
 # Storage

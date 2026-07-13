@@ -124,7 +124,7 @@ spec:
           containers:
           - name: usersync
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-            imagePullPolicy: Always
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
             env:
             - name: SYNC_FROM_DBGAP
               value: {{ .Values.usersync.syncFromDbgap | quote }}

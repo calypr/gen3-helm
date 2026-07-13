@@ -13,6 +13,7 @@ data:
       created_time TIMESTAMPTZ,
       updated_time TIMESTAMPTZ,
       name TEXT,
+      file_name TEXT,
       version TEXT,
       description TEXT
     );
@@ -33,9 +34,28 @@ data:
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS drs_object_controlled_access (
+      object_id TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS drs_object_alias (
       alias_id TEXT PRIMARY KEY,
       object_id TEXT NOT NULL,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
+
+    ALTER TABLE drs_object
+      ADD COLUMN IF NOT EXISTS file_name TEXT;
+
+    CREATE TABLE IF NOT EXISTS drs_object_browse_index (
+      object_id TEXT NOT NULL,
+      resource TEXT NOT NULL,
+      normalized_path TEXT NOT NULL,
+      parent_path TEXT NOT NULL,
+      entry_name TEXT NOT NULL,
+      PRIMARY KEY (resource, object_id),
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
@@ -46,7 +66,8 @@ data:
       ADD COLUMN IF NOT EXISTS project TEXT NOT NULL DEFAULT '';
 
     CREATE TABLE IF NOT EXISTS s3_credential (
-      bucket TEXT PRIMARY KEY,
+      credential_id TEXT PRIMARY KEY,
+      bucket TEXT NOT NULL,
       provider TEXT NOT NULL DEFAULT 's3',
       region TEXT,
       access_key TEXT,
@@ -55,16 +76,58 @@ data:
     );
 
     ALTER TABLE s3_credential
+      ADD COLUMN IF NOT EXISTS credential_id TEXT;
+
+    ALTER TABLE s3_credential
       ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 's3';
 
+    UPDATE s3_credential
+      SET credential_id = bucket
+      WHERE COALESCE(BTRIM(credential_id), '') = '';
+
+    ALTER TABLE s3_credential
+      ALTER COLUMN credential_id SET NOT NULL;
+
+    ALTER TABLE s3_credential
+      DROP CONSTRAINT IF EXISTS s3_credential_pkey;
+
+    ALTER TABLE s3_credential
+      ADD PRIMARY KEY (credential_id);
+
+    CREATE INDEX IF NOT EXISTS idx_s3_credential_bucket
+      ON s3_credential(bucket);
 
     CREATE TABLE IF NOT EXISTS bucket_scope (
       organization TEXT NOT NULL,
       project_id TEXT NOT NULL,
+      credential_id TEXT NOT NULL,
       bucket TEXT NOT NULL,
       path_prefix TEXT NULL,
       PRIMARY KEY (organization, project_id)
     );
+
+    ALTER TABLE bucket_scope
+      ADD COLUMN IF NOT EXISTS credential_id TEXT;
+
+    UPDATE bucket_scope
+      SET credential_id = bucket
+      WHERE COALESCE(BTRIM(credential_id), '') = '';
+
+    ALTER TABLE bucket_scope
+      ALTER COLUMN credential_id SET NOT NULL;
+
+    ALTER TABLE bucket_scope
+      ADD COLUMN IF NOT EXISTS bucket TEXT;
+
+    UPDATE bucket_scope
+      SET bucket = credential_id
+      WHERE COALESCE(BTRIM(bucket), '') = '';
+
+    ALTER TABLE bucket_scope
+      ALTER COLUMN bucket SET NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_bucket_scope_credential_id
+      ON bucket_scope(credential_id);
 
     CREATE TABLE IF NOT EXISTS lfs_pending_metadata (
       oid TEXT PRIMARY KEY,
@@ -202,11 +265,32 @@ data:
     CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_idx
       ON drs_object_checksum(checksum);
 
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_idx
+      ON drs_object_controlled_access(object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_resource_idx
+      ON drs_object_controlled_access(resource);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_resource_object_id_idx
+      ON drs_object_controlled_access(resource, object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_resource_idx
+      ON drs_object_controlled_access(object_id, resource);
+
     CREATE INDEX IF NOT EXISTS drs_object_access_method_scope_idx
       ON drs_object_access_method(org, project);
 
     CREATE INDEX IF NOT EXISTS drs_object_alias_object_id_idx
       ON drs_object_alias(object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_object_id_idx
+      ON drs_object_browse_index(resource, parent_path, object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_entry_name_idx
+      ON drs_object_browse_index(resource, parent_path, entry_name);
+
+    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_normalized_path_idx
+      ON drs_object_browse_index(resource, normalized_path);
 
     CREATE INDEX IF NOT EXISTS idx_bucket_scope_bucket
       ON bucket_scope(bucket);
@@ -258,6 +342,41 @@ data:
 
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_scope_time
       ON provider_transfer_event(organization, project, direction, event_time);
+
+    INSERT INTO drs_object_browse_index (object_id, resource, normalized_path, parent_path, entry_name)
+    SELECT
+      scoped.object_id,
+      scoped.resource,
+      scoped.normalized_path,
+      CASE
+        WHEN position('/' in scoped.normalized_path) = 0 THEN ''
+        ELSE regexp_replace(scoped.normalized_path, '/[^/]+$', '')
+      END AS parent_path,
+      regexp_replace(scoped.normalized_path, '^.*/', '') AS entry_name
+    FROM (
+      SELECT
+        ca.object_id,
+        ca.resource,
+        regexp_replace(
+          regexp_replace(
+            btrim(replace(COALESCE(o.file_name, o.name, ''), E'\\', '/'), '/'),
+            '/+',
+            '/',
+            'g'
+          ),
+          '^/+|/+$',
+          '',
+          'g'
+        ) AS normalized_path
+      FROM drs_object_controlled_access ca
+      INNER JOIN drs_object o ON o.id = ca.object_id
+    ) scoped
+    WHERE scoped.normalized_path <> ''
+      AND scoped.normalized_path !~ '(^|/)\.\.?(/|$)'
+    ON CONFLICT (resource, object_id) DO UPDATE SET
+      normalized_path = EXCLUDED.normalized_path,
+      parent_path = EXCLUDED.parent_path,
+      entry_name = EXCLUDED.entry_name;
 
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_actor_time
       ON provider_transfer_event(actor_email, actor_subject, event_time);

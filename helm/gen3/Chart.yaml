@@ -9,7 +9,7 @@ dependencies:
   repository: "file://../ambassador"
   condition: ambassador.enabled
 - name: arborist
-  version: 0.1.11
+  version: 0.1.12
   repository: "file://../arborist"
   condition: arborist.enabled
 - name: argo-wrapper
@@ -43,6 +43,10 @@ dependencies:
   version: 0.1.0
   repository: "file://../fhir-server"
   condition: fhir-server.enabled
+- name: funnel
+  version: 0.1.77
+  repository: "file://../funnel"
+  condition: funnel.enabled
 - name: gecko
   version: "0.1.0"
   repository: "file://../gecko"
@@ -79,6 +83,10 @@ dependencies:
   version: 0.1.16
   repository: "file://../requestor"
   condition: requestor.enabled
+- name: redis
+  version: 0.1.0
+  repository: "file://../redis"
+  condition: redis.enabled
 - name: revproxy
   version: 0.1.14
   repository: "file://../revproxy"
@@ -111,14 +119,13 @@ dependencies:
   version: 0.1.0
   repository: "file://../viv"
   condition: viv.enabled
-- name: qdrant
-  version: 1.15.4
-  repository: "https://qdrant.github.io/qdrant-helm"
-  condition: qdrant.enabled
 - name: syfon
   version: 0.1.0
   repository: "file://../syfon"
   condition: syfon.enabled
+    #- name: qdrant
+    #version: 1.15.4
+    #repository: "https://qdrant.github.io/qdrant-helm"
 
 # A chart can be either an 'application' or a 'library' chart.
 #

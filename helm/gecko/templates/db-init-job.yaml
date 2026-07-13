@@ -1,7 +1,8 @@
+{{- if .Values.postgres.initJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "gecko.fullname" . }}-db-init
+  name: {{ printf "%s-db-init-%s" (include "gecko.fullname" . | trunc 45 | trimSuffix "-") (include (print $.Template.BasePath "/job-db-init.yaml") . | sha256sum | trunc 8) }}
 spec:
   backoffLimit: 10
   template:
@@ -12,13 +13,12 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: db-init
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/bin/bash", "-c"]
+          image: {{ .Values.postgres.initJob.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
           args:
             - |
-              #!/bin/bash
-              set -e
+              set -eu
 
               INIT_DATA_PATH="/mnt/db-init-data"
 
@@ -31,8 +31,6 @@ spec:
               echo "Database ready, initializing..."
 
               psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" <<EOF
-              \c gecko_local
-
               CREATE SCHEMA IF NOT EXISTS config_schema;
               CREATE OR REPLACE FUNCTION create_config_table(table_name TEXT)
               RETURNS void AS '
@@ -50,41 +48,59 @@ spec:
               SELECT create_config_table('nav');
               SELECT create_config_table('file_summary');
               SELECT create_config_table('apps_page');
+              SELECT create_config_table('projects');
 
               DROP FUNCTION create_config_table(TEXT);
               EOF
 
               echo "Inserting initial configuration data from ConfigMap..."
 
-              # Insert NAV config (using $(cat FILE) to read JSON content)
-              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "
-                INSERT INTO config_schema.nav (name, content)
-                VALUES (
-                  '1',
-                  '$(cat ${INIT_DATA_PATH}/nav.json)'::jsonb
-                )
-                ON CONFLICT (name) DO UPDATE SET content = EXCLUDED.content;
-              "
+              insert_config() {
+                table_name="$1"
+                config_name="$2"
+                config_file="$3"
 
-              # Insert FILE_SUMMARY config
-              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "
-                INSERT INTO config_schema.file_summary (name, content)
-                VALUES (
-                  '1',
-                  '$(cat ${INIT_DATA_PATH}/file_summary.json)'::jsonb
-                )
-                ON CONFLICT (name) DO UPDATE SET content = EXCLUDED.content;
-              "
+                psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" <<SQL
+              INSERT INTO config_schema.${table_name} (name, content)
+              VALUES (
+                '${config_name}',
+                \$json\$
+              $(cat "${config_file}")
+                \$json\$::jsonb
+              )
+              ON CONFLICT (name) DO UPDATE SET content = EXCLUDED.content;
+              SQL
+              }
 
-              # Insert APPS_PAGE config
-              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "
-                INSERT INTO config_schema.apps_page (name, content)
-                VALUES (
-                  '1',
-                  '$(cat ${INIT_DATA_PATH}/apps_page.json)'::jsonb
-                )
-                ON CONFLICT (name) DO UPDATE SET content = EXCLUDED.content;
-              "
+              insert_config nav 1 "${INIT_DATA_PATH}/nav.json"
+              insert_config file_summary 1 "${INIT_DATA_PATH}/file_summary.json"
+              insert_config apps_page 1 "${INIT_DATA_PATH}/apps_page.json"
+
+              psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" <<SQL
+              DO \$do\$
+              BEGIN
+                IF EXISTS (
+                  SELECT 1
+                  FROM jsonb_array_elements(\$json\$
+              $(cat "${INIT_DATA_PATH}/projects.json")
+              \$json\$::jsonb) AS project
+                  WHERE project->>'org_title' IS NULL
+                    OR project->>'org_title' = ''
+                    OR project->>'project_title' IS NULL
+                    OR project->>'project_title' = ''
+                ) THEN
+                  RAISE EXCEPTION 'Every Gecko project config in .Values.projects must set org_title and project_title';
+                END IF;
+              END
+              \$do\$;
+
+              INSERT INTO config_schema.projects (name, content)
+              SELECT concat(project->>'org_title', '/', project->>'project_title'), project
+              FROM jsonb_array_elements(\$json\$
+              $(cat "${INIT_DATA_PATH}/projects.json")
+              \$json\$::jsonb) AS project
+              ON CONFLICT (name) DO UPDATE SET content = EXCLUDED.content;
+              SQL
 
               echo "Database initialization complete."
           env:
@@ -141,3 +157,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

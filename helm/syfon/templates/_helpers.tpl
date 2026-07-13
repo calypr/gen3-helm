@@ -59,3 +59,27 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 {{- end -}}
 
+{{/*
+Generate or reuse a secret value for compatibility credentials.
+*/}}
+{{- define "syfon.getOrGenSecret" -}}
+{{- $value := index . 0 -}}
+{{- $secretName := index . 1 -}}
+{{- $secretKey := index . 2 -}}
+{{- $secretLength := index . 3 -}}
+{{- $namespace := index . 4 -}}
+{{- if $value -}}
+{{- $value = $value | b64enc -}}
+{{- end -}}
+{{- if not $value -}}
+  {{- if $secret := lookup "v1" "Secret" $namespace $secretName -}}
+    {{- if hasKey $secret.data $secretKey -}}
+      {{- $value = index $secret.data $secretKey -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $value -}}
+    {{- $value = randAlphaNum $secretLength | b64enc -}}
+  {{- end -}}
+{{- end -}}
+{{- $value -}}
+{{- end -}}

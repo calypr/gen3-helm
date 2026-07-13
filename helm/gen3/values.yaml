@@ -145,6 +145,11 @@ frontend-framework:
     # -- (string) Overrides the image tag whose default is the chart appVersion.
     tag: "develop"
 
+# -- (map) Configurations for Funnel chart.
+funnel:
+  # -- (bool) Whether to deploy the Funnel subchart.
+  enabled: false
+
 # -- (map) Configurations for guppy chart.
 guppy:
   # -- (bool) Whether to deploy the guppy subchart.
@@ -254,6 +259,10 @@ requestor:
     repository:
     # -- (string) Overrides the image tag whose default is the chart appVersion.
     tag:
+
+redis:
+  # -- (bool) Whether to deploy the shared authz cache subchart.
+  enabled: true
 
 revproxy:
   # -- (bool) Whether to deploy the revproxy subchart.

@@ -3,6 +3,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: revproxy-dev
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
 {{- if .Values.global.dev }}
   tls:

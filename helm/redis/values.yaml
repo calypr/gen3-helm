@@ -1,0 +1,49 @@
+# Default values for redis.
+
+global:
+  dev: true
+  environment: default
+  hostname: localhost
+  revproxyArn: arn:aws:acm:us-east-1:123456:certificate
+  netPolicy: true
+  ddEnabled: false
+
+replicaCount: 1
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: redis
+  pullPolicy: IfNotPresent
+  tag: "7.2-alpine"
+
+service:
+  name: authz-cache-service
+  type: ClusterIP
+  port: 6379
+
+networkPolicy:
+  enabled: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+persistence:
+  enabled: false
+
+auth:
+  enabled: true
+  secretName: authz-cache-credentials
+  password: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
