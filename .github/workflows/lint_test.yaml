@@ -22,7 +22,11 @@ jobs:
           helm repo add elastic https://helm.elastic.co
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo add qdrant https://qdrant.github.io/qdrant-helm
+          helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
           helm repo update
+
+      - name: Build Loom chart dependencies
+        run: helm dependency build ./helm/loom
 
       - uses: actions/setup-python@v4
         with:

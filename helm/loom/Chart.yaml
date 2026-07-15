@@ -1,0 +1,22 @@
+apiVersion: v2
+name: loom
+description: Loom FHIR dataframe GraphQL server
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - fhir
+  - arangodb
+  - graphql
+  - dataframe
+
+dependencies:
+  - name: clickstack-operators
+    version: 1.0.0
+    repository: https://clickhouse.github.io/ClickStack-helm-charts
+    alias: clickstackOperators
+    condition: clickstackOperators.enabled
+  - name: clickstack
+    version: 3.0.1
+    repository: https://clickhouse.github.io/ClickStack-helm-charts
+    condition: clickstack.enabled
