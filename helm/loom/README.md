@@ -1,10 +1,7 @@
 # Loom Helm chart
 
-The chart deploys the Loom FHIR dataframe GraphQL service. ClickHouse is owned
-by the official ClickStack dependencies (`clickstack-operators` and
-`clickstack`), so the chart derives the in-cluster ClickHouse service endpoint
-automatically. Loom also deploys the ArangoDB service it requires and derives
-the in-cluster endpoint automatically.
+The chart deploys the Loom FHIR dataframe GraphQL service and the ArangoDB
+service it requires. The in-cluster ArangoDB endpoint is derived automatically.
 
 ## Local kind smoke test
 
@@ -14,9 +11,6 @@ export LOOM_REPO=/path/to/loom
 docker build -t loom:dev "$LOOM_REPO"
 kind create cluster --name loom
 kind load docker-image loom:dev --name loom
-helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
-helm repo update
-helm dependency update ./helm/loom
 helm upgrade --install loom ./helm/loom \
   --namespace loom --create-namespace \
   -f ./helm/loom/values-local.yaml
@@ -25,8 +19,8 @@ kubectl -n loom port-forward svc/loom-loom 8080:8080
 curl http://127.0.0.1:8080/healthz
 ```
 
-The local values use `--no-auth`, an ephemeral ArangoDB, and small PVCs for the
-ClickStack ClickHouse/Keeper resources. The data is intentionally disposable.
+The local values use `--no-auth` and an ephemeral ArangoDB. The data is
+intentionally disposable.
 Load a resource file through
 the existing import API after port-forwarding, for example:
 
@@ -38,11 +32,9 @@ curl -F project=ARANGODB_PROTO \
   http://127.0.0.1:8080/api/v1/imports
 ```
 
-For a real cluster, use a managed Loom image registry, replace the ClickStack
-development secrets, and size its
-`clickhouse.keeper` and `clickhouse.cluster` storage. To use managed
-ClickHouse, disable `clickstack.enabled`, set `server.clickhouse.url` (or
-`server.clickhouse.host` and `port`), and set `server.waitForBackends` false
+For a real cluster, use a managed Loom image registry. If the Loom server is
+configured to use ClickHouse, set `server.clickhouse.url` (or
+`server.clickhouse.host` and `port`) and set `server.waitForBackends` false
 unless the endpoint is reachable from a BusyBox init container. The chart's
 liveness/readiness probes use `/healthz`; the endpoint is process-level health
 and does not hide backend connection failures during startup.

@@ -347,6 +347,7 @@ authzSnapshotCache:
     image: "redis:7.2-alpine"
     host: "authz-cache-service"
     port: 6379
+    maxAttempts: 60
     secretName: "authz-cache-credentials"
     passwordKey: "redis-password"
 
@@ -2062,6 +2063,10 @@ FENCE_CONFIG:
   AUTHZ_SNAPSHOT_CACHE_ENABLED: true
   AUTHZ_SNAPSHOT_CACHE_REDIS_URL: redis://authz-cache-service:6379/0
   AUTHZ_SNAPSHOT_CACHE_TTL_SECONDS: 3600
+  AUTHZ_SNAPSHOT_CACHE_CONNECT_TIMEOUT_SECONDS: 0.5
+  AUTHZ_SNAPSHOT_CACHE_READ_TIMEOUT_SECONDS: 1.0
+  AUTHZ_SNAPSHOT_CACHE_FAILURE_COOLDOWN_SECONDS: 30
+  AUTHZ_SNAPSHOT_CACHE_HEALTH_CHECK_INTERVAL_SECONDS: 30
 
   # url where the audit-service is running
   AUDIT_SERVICE: 'http://audit-service'

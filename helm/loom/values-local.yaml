@@ -8,27 +8,3 @@ server:
   clickhouse:
     database: default
   waitForBackends: true
-
-clickstackOperators:
-  enabled: true
-
-clickstack:
-  enabled: true
-  secrets:
-    HYPERDX_API_KEY: "loom-local-dev"
-    CLICKHOUSE_PASSWORD: "loom-otel"
-    CLICKHOUSE_APP_PASSWORD: "loom-app"
-    MONGODB_PASSWORD: "loom-mongodb"
-  clickhouse:
-    keeper:
-      spec:
-        dataVolumeClaimSpec:
-          resources:
-            requests:
-              storage: 1Gi
-    cluster:
-      spec:
-        dataVolumeClaimSpec:
-          resources:
-            requests:
-              storage: 2Gi

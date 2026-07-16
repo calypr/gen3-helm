@@ -92,9 +92,3 @@ affinity: {}
 arango:
   image: arangodb:3.12
   noAuth: true
-
-clickstackOperators:
-  enabled: true
-
-clickstack:
-  enabled: true
