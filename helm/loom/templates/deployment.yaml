@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "loom.fullname" . }}
+  name: {{ include "loom.deploymentName" . }}
   labels:
     {{- include "loom.labels" . | nindent 4 }}
 spec:
@@ -46,7 +46,7 @@ spec:
               drop: ["ALL"]
             runAsNonRoot: true
             runAsUser: 65532
-        {{- if .Values.server.waitForBackends }}
+        {{- if and .Values.server.clickhouse.enabled .Values.clickstack.enabled .Values.server.waitForBackends }}
         - name: wait-for-clickhouse
           image: busybox:1.36
           imagePullPolicy: IfNotPresent

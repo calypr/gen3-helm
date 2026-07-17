@@ -73,6 +73,11 @@ global:
 
 # Dependancy Charts
 
+elasticsearch:
+  # -- (bool) Whether to deploy the in-cluster Elasticsearch dependency.
+  # Set this to false when using an external Elasticsearch/OpenSearch service.
+  enabled: true
+
 
 arborist:
   # -- (bool) Whether to deploy the arborist subchart.
@@ -222,6 +227,7 @@ requestor:
 redis:
   # -- (bool) Whether to deploy the shared authz cache subchart.
   enabled: true
+  fullnameOverride: redis
 
 revproxy:
   # -- (bool) Whether to deploy the revproxy subchart.
@@ -247,6 +253,12 @@ syfon:
 
 loom:
   enabled: true
+  server:
+    clickhouse:
+      # -- (bool) Whether Loom should connect to ClickHouse.
+      enabled: true
+      # -- (string) ClickHouse native URL used by Loom when enabled.
+      url: clickhouse://clickhouse:9000
 
 gecko:
   enabled: true

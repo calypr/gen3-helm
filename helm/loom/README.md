@@ -1,7 +1,9 @@
 # Loom Helm chart
 
-The chart deploys the Loom FHIR dataframe GraphQL service and the ArangoDB
-service it requires. The in-cluster ArangoDB endpoint is derived automatically.
+The chart deploys the Loom FHIR dataframe GraphQL service, one ClickHouse
+StatefulSet, and the ArangoDB service it requires. No ClickHouse operator or
+Keeper cluster is involved. The in-cluster endpoints are fixed at
+`clickhouse:9000` and `arangodb:8529`.
 
 ## Local kind smoke test
 
@@ -19,8 +21,9 @@ kubectl -n loom port-forward svc/loom-loom 8080:8080
 curl http://127.0.0.1:8080/healthz
 ```
 
-The local values use `--no-auth` and an ephemeral ArangoDB. The data is
-intentionally disposable.
+The local values use `--no-auth`, an ephemeral ArangoDB, and an ephemeral
+single-node ClickHouse. Set `clickstack.persistence.enabled: true` when the
+ClickHouse data must survive pod replacement.
 Load a resource file through
 the existing import API after port-forwarding, for example:
 
@@ -38,3 +41,8 @@ configured to use ClickHouse, set `server.clickhouse.url` (or
 unless the endpoint is reachable from a BusyBox init container. The chart's
 liveness/readiness probes use `/healthz`; the endpoint is process-level health
 and does not hide backend connection failures during startup.
+
+To run Loom without ClickHouse, set `server.clickhouse.enabled: false`. The
+chart then emits an empty ClickHouse URL and omits the ClickHouse wait
+init-container. The Loom image must include the matching disabled-backend
+support.

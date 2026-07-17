@@ -46,8 +46,9 @@ server:
     url: ""
     database: fhir_proto
   clickhouse:
-    url: ""
-    host: ""
+    enabled: true
+    url: clickhouse://clickhouse:9000
+    host: clickhouse
     port: 9000
     database: default
   waitForBackends: false
@@ -92,3 +93,24 @@ affinity: {}
 arango:
   image: arangodb:3.12
   noAuth: true
+
+clickstack:
+  enabled: true
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: 25.7-alpine
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: false
+    size: 2Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  auth:
+    username: default
+    password: loom-clickhouse

@@ -113,18 +113,6 @@ spec:
             - name: STORAGE_CHAIN_AUDIT_CACHE_ENABLED
               value: "false"
             {{- end }}
-            - name: GRIP_GRAPH
-              valueFrom:
-                configMapKeyRef:
-                  name: grip-values
-                  key: graphName
-            - name: GRIP_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: grip-values
-                  key: serviceName
-            - name: GRIP_PORT
-              value: "8202"
             {{- if .Values.qdrant.enabled }}
             - name: QDRANT_HOST
               value: {{ printf "%s-qdrant" .Release.Name | quote }}

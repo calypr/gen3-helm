@@ -3,11 +3,11 @@
 {{- end }}
 
 {{- define "loom.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name (include "loom.name" .) | trunc 63 | trimSuffix "-" }}
+{{- default (include "loom.name" .) .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{- define "loom.deploymentName" -}}
+loom-deployment
 {{- end }}
 
 {{- define "loom.labels" -}}
@@ -47,7 +47,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Values.server.clickhouse.host -}}
 {{- .Values.server.clickhouse.host -}}
 {{- else -}}
-{{- printf "%s-clickstack-clickhouse-clickhouse-headless" .Release.Name -}}
+{{- "clickhouse" -}}
 {{- end -}}
 {{- end -}}
 
@@ -55,6 +55,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Values.server.clickhouse.url -}}
 {{- .Values.server.clickhouse.url -}}
 {{- else -}}
-{{- printf "clickhouse://%s:%d" (include "loom.clickhouseHost" .) (int .Values.server.clickhouse.port) -}}
+{{- "clickhouse://clickhouse:9000" -}}
 {{- end -}}
 {{- end -}}

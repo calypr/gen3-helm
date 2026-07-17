@@ -57,6 +57,7 @@ Helm chart to deploy Gen3 Data Commons
 | aws-es-proxy.secrets | map | `{"awsAccessKeyId":"","awsSecretAccessKey":""}` | Secret information |
 | aws-es-proxy.secrets.awsAccessKeyId | str | `""` | AWS access key ID for aws-es-proxy |
 | aws-es-proxy.secrets.awsSecretAccessKey | str | `""` | AWS secret access key for aws-es-proxy |
+| elasticsearch.enabled | bool | `true` | Whether to deploy the in-cluster Elasticsearch dependency. |
 | elasticsearch.clusterHealthCheckParams | string | `"wait_for_status=yellow&timeout=1s"` |  |
 | elasticsearch.clusterName | string | `"gen3-elasticsearch"` |  |
 | elasticsearch.maxUnavailable | int | `0` |  |
@@ -162,4 +163,3 @@ Helm chart to deploy Gen3 Data Commons
 | sheepdog.enabled | bool | `true` | Whether to deploy the sheepdog subchart. |
 | ssjdispatcher.enabled | bool | `false` | Whether to deploy the ssjdispatcher subchart. |
 | wts.enabled | bool | `true` | Whether to deploy the wts subchart. |
-

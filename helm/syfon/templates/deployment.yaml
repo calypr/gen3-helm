@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "syfon.fullname" . }}
+  name: {{ include "syfon.deploymentName" . }}
   labels:
     {{- include "syfon.labels" . | nindent 4 }}
 spec:
