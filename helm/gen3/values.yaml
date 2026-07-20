@@ -73,9 +73,11 @@ global:
 
 # Dependancy Charts
 
-ambassador:
-  # -- (bool) Whether to deploy the ambassador subchart.
+elasticsearch:
+  # -- (bool) Whether to deploy the in-cluster Elasticsearch dependency.
+  # Set this to false when using an external Elasticsearch/OpenSearch service.
   enabled: true
+
 
 arborist:
   # -- (bool) Whether to deploy the arborist subchart.
@@ -85,9 +87,6 @@ argo-wrapper:
   # -- (bool) Whether to deploy the argo-wrapper subchart.
   enabled: false
 
-audit:
-  # -- (bool) Whether to deploy the audit subchart.
-  enabled: true
 
 
 aws-es-proxy:
@@ -102,16 +101,6 @@ aws-es-proxy:
     # -- (str) AWS secret access key for aws-es-proxy
     awsSecretAccessKey: ""
 
-etl-pod:
-  # -- (bool) Whether to deploy the etl-pod subchart.
-  enabled: true
-  # -- (map) Docker image information.
-  image:
-    # -- (string) The Docker image repository for the etl-po service.
-    repository:
-    # -- (string) Overrides the image tag whose default is the chart appVersion.
-    tag:
-
 fence:
   # -- (bool) Whether to deploy the fence subchart.
   enabled: true
@@ -121,6 +110,8 @@ fence:
     usersync: false
     # -- (string) The cron schedule expression to use in the usersync cronjob. Runs every 30 minutes by default.
     schedule: "*/30 * * * *"
+    # -- (bool) Preserve existing Arborist groups and policy bindings when applying user.yaml. Requires Fence with --preserve-existing-arborist-state support.
+    preserveExistingArboristState: false
     # -- (bool) Whether to sync data from dbGaP.
     syncFromDbgap: false
     # -- (bool) Force attempting a dbgap sync if "true", falls back on user.yaml
@@ -157,7 +148,7 @@ guppy:
 
 hatchery:
   # -- (bool) Whether to deploy the hatchery subchart.
-  enabled: true
+  enabled: false
 
   hatchery:
     sidecarContainer:
@@ -221,34 +212,9 @@ hatchery:
         user-volume-location: "/home/jovyan/pd"
         gen3-volume-location: "/home/jovyan/.gen3"
 
-
-indexd:
-  # -- (bool) Whether to deploy the indexd subchart.
-  enabled: true
-  # -- (string) the default prefix for indexd records
-  defaultPrefix: "PREFIX/"
-
-
-manifestservice:
-  # -- (bool) Whether to deploy the manifest service subchart.
-  enabled: true
-
-metadata:
-  # -- (bool) Whether to deploy the metadata subchart.
-  enabled: true
-
-peregrine:
-  # -- (bool) Whether to deploy the peregrine subchart.
-  enabled: true
-
-pidgin:
-  # -- (bool) Whether to deploy the pidgin subchart.
-  enabled: true
-
 portal:
   # -- (bool) Whether to deploy the portal subchart.
   enabled: true
-
 
 requestor:
   # -- (bool) Whether to deploy the requestor subchart.
@@ -263,6 +229,7 @@ requestor:
 redis:
   # -- (bool) Whether to deploy the shared authz cache subchart.
   enabled: true
+  fullnameOverride: redis
 
 revproxy:
   # -- (bool) Whether to deploy the revproxy subchart.
@@ -281,25 +248,23 @@ revproxy:
     # -- (list) To secure an Ingress by specifying a secret that contains a TLS private key and certificate.
     tls: []
 
-sheepdog:
-  # -- (bool) Whether to deploy the sheepdog subchart.
-  enabled: true
-
-ssjdispatcher:
-  # -- (bool) Whether to deploy the ssjdispatcher subchart.
-  enabled: false
-
-wts:
-  # -- (bool) Whether to deploy the wts subchart.
-  enabled: true
 
 syfon:
   # -- (bool) Whether to deploy the syfon subchart.
-  enabled: false
+  enabled: true
+
+loom:
+  enabled: true
+  server:
+    clickhouse:
+      # -- (bool) Whether Loom should connect to ClickHouse.
+      enabled: true
+      # -- (string) ClickHouse native URL used by Loom when enabled.
+      url: clickhouse://clickhouse:9000
 
 gecko:
+  enabled: true
   qdrant:
-    # -- (bool) Whether Gecko should connect to Qdrant.
     enabled: false
 
 # Disable persistence by default so we can spin up and down ephemeral environments
@@ -327,7 +292,7 @@ qdrant:
       cpu: 200m
       memory: 256Mi
   persistence:
-    enabled: true
+    enabled: false
     storageClass: "qdrant-manual-storage"
     size: 26Gi
     accessModes:

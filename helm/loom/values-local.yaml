@@ -1,0 +1,10 @@
+image:
+  repository: loom
+  tag: dev
+  pullPolicy: IfNotPresent
+
+server:
+  noAuth: true
+  clickhouse:
+    database: default
+  waitForBackends: true

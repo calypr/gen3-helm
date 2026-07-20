@@ -44,6 +44,20 @@ auth:
   secretName: authz-cache-credentials
   password: ""
 
+probes:
+  startup:
+    periodSeconds: 2
+    timeoutSeconds: 1
+    failureThreshold: 30
+  readiness:
+    periodSeconds: 5
+    timeoutSeconds: 1
+    failureThreshold: 3
+  liveness:
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

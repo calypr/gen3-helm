@@ -12,7 +12,12 @@
 {{- else -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
 {{- end -}}
+{{- end -}}
+
+{{- define "syfon.deploymentName" -}}
+syfon-deployment
 {{- end -}}
 
 {{- define "syfon.labels" -}}

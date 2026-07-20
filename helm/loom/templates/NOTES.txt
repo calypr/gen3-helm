@@ -1,0 +1,11 @@
+Loom is installed as {{ include "loom.fullname" . }}.
+
+Port-forward the GraphQL server:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "loom.fullname" . }} 8080:{{ .Values.service.port }}
+
+Then open:
+  http://127.0.0.1:8080/healthz
+  http://127.0.0.1:8080/graphql
+
+This release includes an ArangoDB service managed by the Loom chart.
+All data is lost when the release is removed.
