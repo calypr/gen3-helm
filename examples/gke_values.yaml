@@ -13,6 +13,10 @@ global:
       username: "postgres"
       password: "postgres-password"
 
+elasticsearch:
+  # Use the managed Elasticsearch/OpenSearch endpoint instead of deploying ES in-cluster.
+  enabled: false
+
 # configuration for fence helm chart. You can add it for all our services.
 fence:
   # Override image

@@ -35,11 +35,11 @@ In a production deployment:
 ### Loom FHIR dataframe service
 
 The optional `helm/loom` chart deploys the Loom FHIR dataframe GraphQL server
-alongside the official ClickStack ClickHouse and operator charts. See
+alongside a single chart-owned ClickHouse instance. See
 [`helm/loom/README.md`](./helm/loom/README.md) for the local-cluster smoke test,
 managed-backend configuration, and persistence settings.
 
-ClickHouse service discovery is internal to the Loom chart. ArangoDB is not
+The local ClickHouse service is `clickhouse:9000`. ArangoDB is not
 silently deployed by the Gen3 parent chart: production installs must provide a
 managed/operator-owned ArangoDB service, while local smoke tests may enable
 the disposable backend in `helm/loom/values-local.yaml`.
