@@ -127,6 +127,17 @@ dependencies:
     #version: 1.15.4
     #repository: "https://qdrant.github.io/qdrant-helm"
 
+# helm repo add hapifhir https://hapifhir.github.io/hapi-fhir-jpaserver-starter/
+# adds the hapi-fhir-jpaserver chart to the list of charts that can be installed
+- name: hapi-fhir-jpaserver
+  version: 0.17.1
+  repository: "https://hapifhir.github.io/hapi-fhir-jpaserver-starter/"
+  condition: global.dev
+- name: hapi-fhir-db-init
+  version: 0.1.0
+  repository: "file://../hapi-fhir-db-init"
+  condition: global.dev
+
 # A chart can be either an 'application' or a 'library' chart.
 #
 # Application charts are a collection of templates that can be packaged into versioned archives
@@ -140,7 +151,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.19
+version: 0.1.20
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
