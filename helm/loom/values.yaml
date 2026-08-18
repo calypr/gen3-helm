@@ -1,0 +1,130 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/ohsu-comp-bio/loom
+  tag: main
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+server:
+  listen: ":8080"
+  noAuth: false
+  datasetGenerations: false
+  schema: /app/schemas/graph-fhir.json
+  arango:
+    # Override only when the Loom-provided ArangoDB service is replaced.
+    url: ""
+    database: fhir_proto
+  clickhouse:
+    enabled: true
+    url: clickhouse://clickhouse:9000
+    host: clickhouse
+    port: 9000
+    database: default
+  waitForBackends: false
+  extraArgs: []
+
+# Rendered into /etc/loom/config.yaml. The Gen3 umbrella uses Calypr/Fence
+# authorization by default; standalone deployments may set mode: basic and
+# provide credentials through an existing Secret-backed environment.
+config:
+  auth:
+    mode: calypr
+    calypr:
+      request_timeout: 5s
+      cache_ttl: 30s
+
+# Empty uses files/default-dataframer.json, the executable repository Explorer
+# baseline. It must not contain Builder presentation fields such as views,
+# filters, charts, table columns, or file actions. Override with
+# --set-file dataframer.recipe=/path/to/recipe.json.
+dataframer:
+  recipe: ""
+
+auth:
+  basic:
+    # Optional Secret for standalone mode. The server reads these via
+    # LOOM_AUTH_BASIC_USERNAME/PASSWORD; credentials are never rendered into
+    # config.yaml.
+    existingSecret: ""
+    usernameKey: username
+    passwordKey: password
+
+probes:
+  liveness:
+    path: /livez
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 3
+    failureThreshold: 6
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 3
+    failureThreshold: 6
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+arango:
+  image:
+    repository: arangodb
+    tag: "3.12"
+    pullPolicy: IfNotPresent
+  noAuth: true
+
+clickstack:
+  enabled: true
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: 25.7-alpine
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: false
+    size: 2Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 250m
+      # ClickHouse 25.x commonly idles near 1 GiB RSS before a wide dataframe
+      # insert. Keep enough requested headroom for stable local scheduling.
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  auth:
+    username: default
+    password: loom-clickhouse

@@ -232,7 +232,7 @@ guppy:
 
 You will also need a mapping file to map the fields you want to pull from postgres into the elasticsearch indices. There are too many fields to describe here, but an example mapping file can be found [here](https://github.com/uc-cdis/cdis-manifest/blob/master/gen3.biodatacatalyst.nhlbi.nih.gov/etlMapping.yaml).
 
-Last, guppy works closely with portal to render the explorer page. You will need to ensure a proper [dataExplorer block](https://github.com/uc-cdis/cdis-manifest/blob/master/gen3.biodatacatalyst.nhlbi.nih.gov/portal/gitops.json#L212) is setup within the gitops.json file, referencing fields that have been pulled from postgres into the elasticsearch indices.
+Last, guppy works closely with frontend-framework to render the explorer page. Ensure the frontend explorer configuration references fields that have been pulled from Postgres into the Elasticsearch indices.
 
 ## Extra Information
 
@@ -423,44 +423,6 @@ To configure peregrine we require an entry in the versions block. It also requir
 
 ---
 
-# Portal
-
-## What Does it Do
-
-Portal is a core service that renders the complete commons webpage, it is the front end service.
-
-## How to Configure it
-
-To configure portal we require an entry in the versions block. The portal_app also needs to be defined in the global block. Gitops sets to use the files in the ~/cdis-manifest/(commons url)/ portal directory, dev is the common setup for development environments and [there are default gitops.json](https://github.com/uc-cdis/data-portal/tree/master/data/config) files for most commons that the portal app can be set to.
-
-```yaml
-portal:
-  enabled: true
-
-  gitops:
-    # -- (string) multiline string - gitops.json
-    json: |
-      {}
-    # -- (string) - favicon in base64
-    favicon: ""
-    # -- (string) - multiline string - gitops.css
-    css: |
-      /* gitops default css */
-    # -- (string) - logo in base64
-    logo: ""
-    # -- (string) - createdby.png - base64
-    createdby: ""
-    sponsors:
-```
-
-
-To do this you can follow the example [here](https://github.com/uc-cdis/data-portal/blob/master/docs/portal_config.md).
-
-Portal can also be configured with different images and icons by updating the values, similar to [this](https://github.com/uc-cdis/cdis-manifest/tree/master/gen3.biodatacatalyst.nhlbi.nih.gov/portal).
-
-## Extra Information
-
----
 # Revproxy
 
 ## What Does it Do

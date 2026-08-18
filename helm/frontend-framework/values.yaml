@@ -35,8 +35,6 @@ global:
   revproxyArn: arn:aws:acm:us-east-1:123456:certificate
   # -- (string) URL of the data dictionary.
   dictionaryUrl: https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json
-  # -- (string) Portal application name.
-  portalApp: gitops
   # -- (string) S3 bucket name for Kubernetes manifest files.
   kubeBucket: kube-gen3
   # -- (string) S3 bucket name for log files.
@@ -122,8 +120,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# -- (list) List of environment variables to add to the deployment.
-env: []
+# -- (map) Environment variables to add to the deployment.
+env: {}
 
 # -- (map) Node selector to apply to the pod
 nodeSelector: {}

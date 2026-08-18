@@ -55,7 +55,6 @@ A Helm chart for gen3 Guppy Service
 | global.minAvialable | int | `1` | The minimum amount of pods that are available at all times if the PDB is deployed. |
 | global.netPolicy | bool | `true` | Whether network policies are enabled. |
 | global.pdb | bool | `false` | If the service will be deployed with a Pod Disruption Budget. Note- you need to have more than 2 replicas for the pdb to be deployed. |
-| global.portalApp | string | `"gitops"` | Portal application name. |
 | global.postgres.dbCreate | bool | `true` | Whether the database should be created. |
 | global.postgres.externalSecret | string | `""` | Name of external secret. Disabled if empty |
 | global.postgres.master | map | `{"host":null,"password":null,"port":"5432","username":"postgres"}` | Master credentials to postgres. This is going to be the default postgres server being used for each service, unless each service specifies their own postgres |
@@ -95,4 +94,3 @@ A Helm chart for gen3 Guppy Service
 | strategy.rollingUpdate.maxUnavailable | int | `0` | Maximum amount of pods that can be unavailable during the update. |
 | volumeMounts | list | `[{"mountPath":"/guppy/guppy_config.json","name":"guppy-config","readOnly":true,"subPath":"guppy_config.json"}]` | Volumes to mount to the container. |
 | volumes | list | `[{"configMap":{"items":[{"key":"guppy_config.json","path":"guppy_config.json"}],"name":"manifest-guppy"},"name":"guppy-config"}]` | Volumes to attach to the pod. |
-

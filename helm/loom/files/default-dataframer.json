@@ -1,0 +1,146 @@
+{
+  "recipeSchemaVersion": 1,
+  "name": "calypr-meta-default",
+  "translationVersion": "gen3-util-development-d461f11c7f0ccb078128349ccffd377e4014b62a-extension-columns-v1",
+  "outputs": [
+    {
+      "name": "DocumentReference",
+      "rootResourceType": "DocumentReference",
+      "rowGrain": "file",
+      "collisionPolicy": "overwrite",
+      "fields": [
+        {"name": "id", "expr": {"select": "root.id"}},
+        {"name": "identifier", "expr": {"call": "first", "args": [{"select": "root.identifier[].value"}]}},
+        {"name": "status", "expr": {"select": "root.status"}},
+        {"name": "subject", "expr": {"call": "reference_id", "args": [{"select": "root.subject.reference"}]}},
+        {"name": "based_on", "expr": {"call": "all", "args": [{"select": "root.basedOn[].reference"}]}},
+        {"name": "contentType", "expr": {"select": "root.content[].attachment.contentType"}, "valueMode": "FIRST"},
+        {"name": "url", "expr": {"select": "root.content[].attachment.url"}, "valueMode": "FIRST"},
+        {"name": "size", "expr": {"select": "root.content[].attachment.size"}, "valueMode": "FIRST"},
+        {"name": "hash", "expr": {"select": "root.content[].attachment.hash"}, "valueMode": "FIRST"},
+        {"name": "title", "expr": {"select": "root.content[].attachment.title"}, "valueMode": "FIRST"}
+      ],
+      "dynamicColumns": [
+        {"name": "legacy_identifier_keys", "columnPrefix": "", "source": {"select": "root.identifier[]"}, "key": {"call": "last_segment", "args": [{"select": "item.system"}]}, "value": {"select": "item.value"}, "maxColumns": 64},
+        {"name": "legacy_category_keys", "columnPrefix": "", "source": {"select": "root.category[].coding[]"}, "key": {"call": "last_segment", "args": [{"select": "item.system"}]}, "value": {"select": "item.display"}, "maxColumns": 256}
+      ],
+      "extensionColumns": [
+        {"name": "legacy_extension_keys", "columnPrefix": "", "source": {"select": "root.extension[]"}, "maxColumns": 128},
+        {"name": "attachment_extension_keys", "columnPrefix": "", "source": {"select": "root.content[].attachment.extension[]"}, "maxColumns": 128}
+      ],
+      "traversals": [
+        {
+          "name": "subject_Specimen",
+          "toResourceType": "Specimen",
+          "alias": "specimen",
+          "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "specimen.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "specimen.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}],
+          "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}],
+          "traversals": [{
+            "name": "subject_Patient",
+            "toResourceType": "Patient",
+            "alias": "patient",
+            "fields": [{"name": "patient_id", "expr": {"select": "patient.id"}}],
+            "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "patient.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "patient.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}],
+            "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]
+          }]
+        },
+        {
+          "name": "subject_ResearchStudy",
+          "toResourceType": "ResearchStudy",
+          "alias": "researchstudy",
+          "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "researchstudy.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "researchstudy.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}],
+          "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]
+        },
+        {
+          "name": "focus_DocumentReference",
+          "toResourceType": "Observation",
+          "alias": "observation",
+          "pivots": [{"name": "observation_values", "discovery": {"path": "code", "maxColumns": 256}}, {"name": "observation_component_values", "discovery": {"path": "component[].code", "maxColumns": 256}}],
+          "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}],
+          "fields": [
+            {"name": "observation_code", "expr": {"call": "coalesce", "args": [{"select": "observation.code.text"}, {"call": "first", "args": [{"select": "observation.code.coding[].display"}]}]}}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Patient",
+      "rootResourceType": "ResearchSubject",
+      "rowGrain": "study_enrollment",
+      "collisionPolicy": "overwrite",
+      "fields": [
+        {"name": "id", "expr": {"select": "root.id"}},
+        {"name": "identifier", "expr": {"call": "first", "args": [{"select": "root.identifier[].value"}]}},
+        {"name": "status", "expr": {"select": "root.status"}}
+      ],
+      "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}],
+      "dynamicColumns": [
+        {"name": "identifier_by_system", "source": {"select": "root.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64},
+        {"name": "extension_by_url", "source": {"select": "root.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}
+      ],
+      "traversals": [
+        {"name": "subject_Patient", "toResourceType": "Patient", "alias": "patient", "fields": [
+          {"name": "patient_id", "expr": {"select": "patient.id"}},
+          {"name": "patient_identifier", "expr": {"call": "first", "args": [{"select": "patient.identifier[].value"}]}}
+        ], "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "patient.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "patient.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}], "traversals": [
+          {"name": "subject_Patient", "toResourceType": "Observation", "alias": "observation", "fields": [{"name": "observation_id", "expr": {"select": "observation.id"}}], "pivots": [{"name": "observation_values", "discovery": {"path": "code", "maxColumns": 256}}, {"name": "observation_component_values", "discovery": {"path": "component[].code", "maxColumns": 256}}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]},
+          {"name": "subject_Patient", "toResourceType": "Condition", "alias": "condition", "fields": [{"name": "condition_id", "expr": {"select": "condition.id"}}], "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "condition.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]}
+        ]}
+      ]
+    },
+    {
+      "name": "MedicationAdministration",
+      "rootResourceType": "MedicationAdministration",
+      "rowGrain": "resource",
+      "collisionPolicy": "overwrite",
+      "fields": [
+        {"name": "id", "expr": {"select": "root.id"}},
+        {"name": "status", "expr": {"select": "root.status"}},
+        {"name": "total_dosage", "expr": {"select": "root.dosage.dose.value"}}
+      ],
+      "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}],
+      "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "root.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "root.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}],
+      "traversals": [
+        {"name": "subject_Patient", "toResourceType": "Patient", "alias": "patient", "fields": [
+          {"name": "patient_id", "expr": {"select": "patient.id"}},
+          {"name": "patient_identifier", "expr": {"call": "first", "args": [{"select": "patient.identifier[].value"}]}}
+        ], "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "patient.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "patient.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]}
+      ]
+    },
+    {
+      "name": "Specimen",
+      "rootResourceType": "Specimen",
+      "rowGrain": "specimen",
+      "collisionPolicy": "overwrite",
+      "fields": [
+        {"name": "id", "expr": {"select": "root.id"}},
+        {"name": "identifier", "expr": {"call": "first", "args": [{"select": "root.identifier[].value"}]}},
+        {"name": "parent", "expr": {"call": "join", "args": [{"select": "root.parent[].reference"}, {"literal": ","}]}}
+      ],
+      "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}],
+      "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "root.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "root.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}],
+      "traversals": [
+        {"name": "subject_Patient", "toResourceType": "Patient", "alias": "patient", "fields": [
+          {"name": "patient_id", "expr": {"select": "patient.id"}},
+          {"name": "patient_identifier", "expr": {"call": "first", "args": [{"select": "patient.identifier[].value"}]}}
+        ], "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "patient.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "patient.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]},
+        {"name": "focus_Specimen", "toResourceType": "Observation", "alias": "observation", "fields": [
+          {"name": "observation_code", "expr": {"call": "coalesce", "args": [{"select": "observation.code.text"}, {"call": "first", "args": [{"select": "observation.code.coding[].display"}]}]}}
+        ], "pivots": [{"name": "observation_values", "discovery": {"path": "code", "maxColumns": 256}}, {"name": "observation_component_values", "discovery": {"path": "component[].code", "maxColumns": 256}}], "catalogProjections": [{"name": "populated_fields", "includePaths": ["*"], "kinds": ["scalar"], "naming": "PATH", "valueMode": "FIRST", "maxColumns": 256}]}
+      ]
+    },
+    {
+      "name": "GroupMember",
+      "rootResourceType": "Group",
+      "rowGrain": "expanded",
+      "collisionPolicy": "overwrite",
+      "expand": {"from": {"select": "root.member[]"}, "as": "member"},
+      "identity": {"name": "id", "expr": {"call": "uuid5", "args": [{"literal": "calypr.org"}, {"select": "root.id"}, {"call": "concat", "args": [{"literal": ","}, {"call": "reference_id", "args": [{"select": "member.entity.reference"}]}]}]}},
+      "fields": [
+        {"name": "group_id", "expr": {"select": "root.id"}},
+        {"name": "member_id", "expr": {"call": "reference_id", "args": [{"select": "member.entity.reference"}]}}
+      ],
+      "dynamicColumns": [{"name": "identifier_by_system", "source": {"select": "root.identifier[]"}, "key": {"select": "item.system"}, "value": {"select": "item.value"}, "maxColumns": 64}, {"name": "extension_by_url", "source": {"select": "root.extension[]"}, "key": {"select": "item.url"}, "value": {"call": "coalesce_string", "args": [{"select": "item.valueString"}, {"select": "item.valueCode"}, {"select": "item.valueInteger"}, {"select": "item.valueDecimal"}, {"select": "item.valueBoolean"}, {"select": "item.valueDate"}, {"select": "item.valueDateTime"}]}, "maxColumns": 128}]
+    }
+  ]
+}

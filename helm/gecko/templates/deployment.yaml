@@ -91,7 +91,7 @@ spec:
               {{- else if eq .name "FENCE_BASE_URL" }}
                 {{ default (printf "https://%s/user" $.Values.global.hostname) .value | quote }}
               {{- else if eq .name "SYFON_DATA_API_BASE_URL" }}
-                {{ default (printf "https://%s/data" $.Values.global.hostname) .value | quote }}
+                {{ default "http://syfon:8080" .value | quote }}
               {{- else }}
                 {{ .value | quote }}
               {{- end }}
@@ -113,18 +113,6 @@ spec:
             - name: STORAGE_CHAIN_AUDIT_CACHE_ENABLED
               value: "false"
             {{- end }}
-            - name: GRIP_GRAPH
-              valueFrom:
-                configMapKeyRef:
-                  name: grip-values
-                  key: graphName
-            - name: GRIP_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: grip-values
-                  key: serviceName
-            - name: GRIP_PORT
-              value: "8202"
             {{- if .Values.qdrant.enabled }}
             - name: QDRANT_HOST
               value: {{ printf "%s-qdrant" .Release.Name | quote }}

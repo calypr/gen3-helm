@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ printf "%s-db-init-%s" (include "gecko.fullname" . | trunc 45 | trimSuffix "-") (include (print $.Template.BasePath "/job-db-init.yaml") . | sha256sum | trunc 8) }}
+  name: {{ printf "%s-db-init-%s" (include "gecko.dbInitName" . | trunc 45 | trimSuffix "-") (include (print $.Template.BasePath "/job-db-init.yaml") . | sha256sum | trunc 8) }}
 spec:
   backoffLimit: 10
   template:
@@ -146,7 +146,7 @@ spec:
       volumes:
         - name: db-init-data-volume
           configMap:
-            name: {{ include "gecko.fullname" . }}-db-init-data
+            name: {{ include "gecko.dbInitName" . }}-db-init-data
             optional: false
 
       {{- with .Values.nodeSelector }}

@@ -1,0 +1,21 @@
+image:
+  repository: loom
+  tag: dev
+  pullPolicy: IfNotPresent
+
+server:
+  noAuth: true
+  clickhouse:
+    database: default
+  waitForBackends: true
+
+# Wide dataframe loads need more than ClickHouse's small default cgroup.
+# Override these values per machine as needed.
+clickstack:
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi

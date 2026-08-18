@@ -27,7 +27,7 @@ A Helm chart for gen3 Fence
 | FENCE_CONFIG.ENABLE_DB_MIGRATION | bool | `true` | fence (at the moment) attempts a migration on startup. setting this to false will disable that WARNING: ONLY set to false if you do NOT want to automatically migrate your database.          You should be careful about incompatible versions of your db schema with what          fence expects. In other words, things could be broken if you update to a later          fence that expects a schema your database isn't migrated to. NOTE: We are working to improve the migration process in the near future |
 | FENCE_CONFIG.ENABLE_PROMETHEUS_METRICS | bool | `false` | enable Prometheus Metrics for observability purposes  WARNING: Any counters, gauges, histograms, etc. should be carefully reviewed to make sure its labels do not contain any PII / PHI |
 | FENCE_CONFIG.ENCRYPTION_KEY | string | `"REPLACEME"` | A URL-safe base64-encoded 32-byte key for encrypting keys in db in python you can use the following script to generate one:     import base64     import os     key = base64.urlsafe_b64encode(os.urandom(32))     print(key) |
-| FENCE_CONFIG.LOGIN_OPTIONS | list | `[{"desc":"description","idp":"google","name":"Login from Google"}]` | List of enabled login options (used by data-portal to display login buttons). |
+| FENCE_CONFIG.LOGIN_OPTIONS | list | `[{"desc":"description","idp":"google","name":"Login from Google"}]` | List of enabled login options (used by frontend-framework to display login buttons). |
 | FENCE_CONFIG.MOCK_AUTH | bool | `false` | if true, will automatically login a user with username "test" WARNING: DO NOT ENABLE IN PRODUCTION (for testing purposes only) |
 | FENCE_CONFIG.MOCK_GOOGLE_AUTH | bool | `false` | if true, will fake a successful login response from Google in /login/google     NOTE: this will also modify the behavior of /link/google endpoints WARNING: DO NOT ENABLE IN PRODUCTION (for testing purposes only) will login as the username set in cookie DEV_LOGIN_COOKIE_NAME |
 | FENCE_CONFIG.MOCK_STORAGE | bool | `false` | if true, will ignore anything configured in STORAGE_CREDENTIALS |
@@ -121,7 +121,6 @@ A Helm chart for gen3 Fence
 | global.minAvialable | int | `1` | The minimum amount of pods that are available at all times if the PDB is deployed. |
 | global.netPolicy | bool | `true` | Whether network policies are enabled. |
 | global.pdb | bool | `false` | If the service will be deployed with a Pod Disruption Budget. Note- you need to have more than 2 replicas for the pdb to be deployed. |
-| global.portalApp | string | `"gitops"` | Portal application name. |
 | global.postgres.dbCreate | bool | `true` | Whether the database should be created. |
 | global.postgres.externalSecret | string | `""` | Name of external secret. Disabled if empty |
 | global.postgres.master | map | `{"host":null,"password":null,"port":"5432","username":"postgres"}` | Master credentials to postgres. This is going to be the default postgres server being used for each service, unless each service specifies their own postgres |

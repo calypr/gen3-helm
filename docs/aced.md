@@ -28,18 +28,6 @@ helm repo update
 
 ## Aced specific files:
 
-* gitops.json - Controls windmill UI configuration - see values.yaml
-  Gitops values are encoded as a json string under portal.gitops.json
-  ```
-  portal:
-  ...  
-  # -- (map) GitOps configuration for portal
-    gitops:
-      # -- (string) multiline string - gitops.json
-      json: |
-
-  ```
-
 * fence-config.yaml - Authentication config. Same as legacy compose services file except addition of header
     ```
     fence:

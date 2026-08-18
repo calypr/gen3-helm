@@ -37,21 +37,9 @@ spec:
         - name: frontend-framework
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # livenessProbe:
-          #   httpGet:
-          #     path: /ff
-          #     port: 80
-          #   initialDelaySeconds: 60
-          #   periodSeconds: 30
-          #   timeoutSeconds: 30
-          #   failureThreshold: 30
           readinessProbe:
             httpGet:
-              {{- if eq "portal" .Values.global.frontendRoot }}
-              path: /ff
-              {{- else }}
-              path: /
-              {{- end }}
+              path: /api/healthz
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 60
@@ -59,7 +47,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           ports:
-            - containerPort: 80
+            - containerPort: 3000
               name: http
               protocol: TCP
           envFrom:
@@ -72,14 +60,7 @@ spec:
             {{- end }}
             - name: HOSTNAME
               value: revproxy-service
-            {{- if eq "portal" .Values.global.frontendRoot }}
-            - name: BASE_PATH
-              value: /ff
-            {{- else}}
-            - name: NEXT_PUBLIC_PORTAL_BASENAME
-              value: /portal
-            {{- end }}
-            # disable npm 7's brand new update notifier to prevent Portal from stuck at starting up
+            # Disable npm's update notifier so the frontend starts non-interactively.
             # see https://github.com/npm/cli/issues/3163
             - name: NPM_CONFIG_UPDATE_NOTIFIER
               value: "false"
