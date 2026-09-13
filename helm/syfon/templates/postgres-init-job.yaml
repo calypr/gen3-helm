@@ -1,4 +1,6 @@
 {{- if .Values.postgres.initJob.enabled }}
+{{- $tlsMode := include "syfon.postgresTLSMode" . -}}
+{{- $tlsEnabled := ne $tlsMode "disabled" -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -59,6 +61,12 @@ spec:
           env:
             - name: PG_WAIT_TIMEOUT_SECONDS
               value: {{ .Values.postgres.initJob.waitTimeoutSeconds | quote }}
+            {{- if $tlsEnabled }}
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: /etc/ssl/certs/postgres/ca.crt
+            {{- end }}
             - name: DRS_DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -121,10 +129,23 @@ spec:
                   name: {{ include "syfon.adminDbSecretName" . }}
                   key: database
           volumeMounts:
+            {{- if $tlsEnabled }}
+            - name: postgres-ca
+              mountPath: /etc/ssl/certs/postgres
+              readOnly: true
+            {{- end }}
             - name: schema
               mountPath: /sql
               readOnly: true
       volumes:
+        {{- if $tlsEnabled }}
+        - name: postgres-ca
+          secret:
+            secretName: {{ include "syfon.postgresTLSSecretName" . }}
+            items:
+              - key: {{ include "syfon.postgresTLSCAKey" . }}
+                path: ca.crt
+        {{- end }}
         - name: schema
           configMap:
             name: {{ printf "%s-postgres-schema-%d" (include "syfon.fullname" . | trunc 36 | trimSuffix "-") .Release.Revision }}

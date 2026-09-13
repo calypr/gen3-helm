@@ -1,9 +1,45 @@
 # gen3
 
-![Version: 0.1.21](https://img.shields.io/badge/Version-0.1.21-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
+![Version: 0.1.20](https://img.shields.io/badge/Version-0.1.20-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
 
 
 Helm chart to deploy Gen3 Data Commons
+
+## Local PostgreSQL and Syfon example
+
+The default local profile deploys bundled PostgreSQL with
+`global.postgres.tls.mode: selfSigned`. The chart creates and reuses the
+`gen3-postgresql-tls` private-CA Secret, configures Bitnami PostgreSQL with
+the server certificate, and gives Syfon plus its init Job only the CA with
+`verify-full` trust. The generated SANs cover the release's PostgreSQL and
+headless service names in short, namespace, `.svc`, and cluster-domain forms.
+
+For an externally managed PostgreSQL server, set
+`global.dev: false` and use `global.postgres.tls.mode: existingSecret` with
+`global.postgres.tls.secretName` and `caKey`. `selfSigned` and `certManager`
+are intentionally rejected for external PostgreSQL. `certManager` is
+available for bundled PostgreSQL when a pre-existing Issuer or ClusterIssuer
+is selected with `global.postgres.tls.certManager.issuerRef`; cert-manager is
+not installed by this chart. A private/internal issuer must put the CA in the
+resulting Secret under the configured `caKey`.
+
+The TLS block is the source of truth for Syfon's `sslmode` and insecure
+transport settings. With TLS enabled, both the Deployment and init Job use
+`PGSSLMODE=verify-full` and the same CA mount. PostgreSQL must be restarted or
+reloaded after a cert-manager leaf renewal; this chart has no built-in
+certificate reloader. If the cluster already runs Stakater Reloader, opt in
+through the Bitnami workload values, for example:
+
+```yaml
+postgresql:
+  primary:
+    podAnnotations:
+      secret.reloader.stakater.com/reload: gen3-postgresql-tls
+```
+
+The local example sets `syfon.config.routes.docs: true`. Syfon's Swagger UI
+and OpenAPI endpoints are public by design, including in production; other
+API routes remain protected by the configured authentication and authorization.
 
 ## Maintainers
 

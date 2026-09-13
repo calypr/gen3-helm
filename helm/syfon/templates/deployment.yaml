@@ -1,6 +1,9 @@
 {{- $cfg := (.Values.config | default dict) -}}
 {{- $configPort := (get $cfg "port" | default 8080) -}}
 {{- $fenceURL := include "syfon.fenceURL" . -}}
+{{- $tlsMode := include "syfon.postgresTLSMode" . -}}
+{{- $tlsEnabled := ne $tlsMode "disabled" -}}
+{{- include "syfon.validateLegacyPostgresTLSValues" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -77,12 +80,15 @@ spec:
                   name: {{ include "syfon.appDbSecretName" . }}
                   key: db_database
             - name: DRS_DB_SSLMODE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "syfon.appDbSecretName" . }}
-                  key: db_sslmode
+              value: {{ include "syfon.postgresTLSDatabaseSSLMode" . | quote }}
             - name: DRS_DB_ALLOW_INSECURE_TRANSPORT
-              value: {{ .Values.postgres.app.allowInsecureTransport | quote }}
+              value: {{ include "syfon.postgresTLSAllowInsecureTransport" . | quote }}
+            {{- if $tlsEnabled }}
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: {{ include "syfon.postgresTLSRootCert" . | quote }}
+            {{- end }}
             - name: DRS_DB_MAX_OPEN_CONNECTIONS
               value: {{ .Values.postgres.pool.maxOpenConnections | quote }}
             - name: DRS_DB_MAX_IDLE_CONNECTIONS
@@ -95,12 +101,25 @@ spec:
 {{- toYaml . | nindent 12 }}
             {{- end }}
           volumeMounts:
+            {{- if $tlsEnabled }}
+            - name: postgres-ca
+              mountPath: /etc/ssl/certs/postgres
+              readOnly: true
+            {{- end }}
             - name: config
               mountPath: /etc/drs
               readOnly: true
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       volumes:
+        {{- if $tlsEnabled }}
+        - name: postgres-ca
+          secret:
+            secretName: {{ include "syfon.postgresTLSSecretName" . }}
+            items:
+              - key: {{ include "syfon.postgresTLSCAKey" . }}
+                path: ca.crt
+        {{- end }}
         - name: config
           secret:
             secretName: {{ include "syfon.fullname" . }}-config

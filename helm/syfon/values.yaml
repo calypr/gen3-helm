@@ -1,5 +1,14 @@
 fullnameOverride: syfon
 
+global:
+  postgres:
+    tls:
+      # The umbrella chart sets this to selfSigned for its bundled PostgreSQL.
+      # Standalone Syfon installs remain backwards compatible with plaintext DBs.
+      mode: disabled
+      secretName: ""
+      caKey: ca.crt
+
 replicaCount: 1
 
 image:
@@ -56,8 +65,6 @@ postgres:
     db_username: syfon_user
     db_password: syfon_pass
     db_database: syfon_db
-    db_sslmode: disable
-    allowInsecureTransport: true
   pool:
     maxOpenConnections: 25
     maxIdleConnections: 10

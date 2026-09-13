@@ -149,6 +149,49 @@ manually.
 - Database connection values are still supplied from Kubernetes secrets via
   `DRS_DB_*` env vars.
 
+## PostgreSQL TLS
+
+PostgreSQL connection security is configured by one value block:
+
+```yaml
+global:
+  postgres:
+    tls:
+      mode: existingSecret # disabled, selfSigned, certManager, or existingSecret
+      secretName: postgres-tls
+      caKey: ca.crt
+```
+
+The umbrella chart defaults to `mode: selfSigned` for its bundled PostgreSQL.
+It creates (and reuses on upgrades) the `gen3-postgresql-tls` Secret with a
+private CA and a server certificate. The certificate covers the PostgreSQL
+service and headless-service names in short, namespace, `.svc`, and
+`.svc.<cluster-domain>` forms. The bundled Bitnami PostgreSQL chart consumes
+the certificate and key; Syfon and its database-init Job mount only the CA and
+use `verify-full`.
+
+Use `certManager` with a pre-existing `Issuer` or `ClusterIssuer` for a
+production certificate workflow, or use `existingSecret` when the caller
+already owns the certificate and CA. The Secret consumed by Syfon must contain
+the CA under `caKey`; a private/internal issuer must populate that key. The
+umbrella chart does not install cert-manager. `selfSigned` and `certManager`
+are rejected for an external PostgreSQL server; use `existingSecret` there.
+
+The old `postgres.app.db_sslmode` and `postgres.app.allowInsecureTransport`
+values are accepted for compatibility only when they agree with the derived
+TLS mode; omit them in new configurations. TLS mode is the source of truth.
+With TLS disabled, the chart uses `disable` and does not set `PGSSLROOTCERT`.
+
+When cert-manager renews a PostgreSQL leaf certificate, restart or reload the
+PostgreSQL StatefulSet so the server reads the new key pair. This chart does
+not install a certificate reloader; wire renewal to the rollout mechanism
+used by your cluster.
+
+Syfon's `/index/swagger` and `/index/openapi*.yaml` endpoints are intentionally
+anonymous, including in the production profile. The umbrella chart's local
+example enables `syfon.config.routes.docs: true`; protect the rest of the API
+with the configured authentication and authorization policy.
+
 ## Install
 
 ```bash
