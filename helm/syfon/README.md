@@ -177,6 +177,12 @@ the CA under `caKey`; a private/internal issuer must populate that key. The
 umbrella chart does not install cert-manager. `selfSigned` and `certManager`
 are rejected for an external PostgreSQL server; use `existingSecret` there.
 
+For the umbrella's self-signed mode, a Helm CLI upgrade uses `lookup` to reuse
+the live 10-year Secret. Offline `helm template` and GitOps rendering cannot
+see that live Secret and generate new material on each render; choose
+`existingSecret` or `certManager` when GitOps needs stable certificate
+ownership.
+
 The old `postgres.app.db_sslmode` and `postgres.app.allowInsecureTransport`
 values are accepted for compatibility only when they agree with the derived
 TLS mode; omit them in new configurations. TLS mode is the source of truth.

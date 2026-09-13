@@ -118,6 +118,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 {{- end -}}
 
+{{- define "syfon.validateExtraEnv" -}}
+{{- $reserved := list "DRS_DB_SSLMODE" "DRS_DB_ALLOW_INSECURE_TRANSPORT" "PGSSLMODE" "PGSSLROOTCERT" -}}
+{{- range $entry := .Values.extraEnv | default list -}}
+  {{- $name := get $entry "name" | default "" | toString | trim -}}
+  {{- if has $name $reserved -}}
+    {{- fail (printf "extraEnv cannot override the database TLS variable %q" $name) -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "syfon.fenceURL" -}}
 {{- $cfg := .Values.config | default dict -}}
 {{- $auth := get $cfg "auth" | default dict -}}

@@ -4,6 +4,7 @@
 {{- $tlsMode := include "syfon.postgresTLSMode" . -}}
 {{- $tlsEnabled := ne $tlsMode "disabled" -}}
 {{- include "syfon.validateLegacyPostgresTLSValues" . -}}
+{{- include "syfon.validateExtraEnv" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

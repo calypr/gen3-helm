@@ -88,6 +88,17 @@ class PostgresTLSRenderTests(unittest.TestCase):
                 "postgres.app.db_sslmode=disable",
             )
 
+    def test_extra_env_cannot_override_database_tls_settings(self):
+        for name in (
+            "DRS_DB_SSLMODE",
+            "DRS_DB_ALLOW_INSECURE_TRANSPORT",
+            "PGSSLMODE",
+            "PGSSLROOTCERT",
+        ):
+            with self.subTest(name=name):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    render(f"extraEnv[0].name={name}", "extraEnv[0].value=override")
+
 
 if __name__ == "__main__":
     unittest.main()

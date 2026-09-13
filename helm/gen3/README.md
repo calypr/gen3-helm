@@ -1,6 +1,6 @@
 # gen3
 
-![Version: 0.1.20](https://img.shields.io/badge/Version-0.1.20-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
+![Version: 0.1.21](https://img.shields.io/badge/Version-0.1.21-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
 
 
 Helm chart to deploy Gen3 Data Commons
@@ -22,6 +22,12 @@ available for bundled PostgreSQL when a pre-existing Issuer or ClusterIssuer
 is selected with `global.postgres.tls.certManager.issuerRef`; cert-manager is
 not installed by this chart. A private/internal issuer must put the CA in the
 resulting Secret under the configured `caKey`.
+
+The Helm-generated self-signed CA and leaf are valid for 10 years. A Helm CLI
+upgrade uses `lookup` to reuse the live Secret, so it does not rotate existing
+material. Offline `helm template` and GitOps rendering cannot observe live
+Secrets and will generate new material on each render; use `existingSecret` or
+`certManager` for GitOps-managed release stability.
 
 The TLS block is the source of truth for Syfon's `sslmode` and insecure
 transport settings. With TLS enabled, both the Deployment and init Job use

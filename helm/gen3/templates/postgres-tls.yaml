@@ -1,8 +1,11 @@
 {{- $global := .Values.global | default dict -}}
 {{- $postgres := get $global "postgres" | default dict -}}
 {{- $tls := get $postgres "tls" | default dict -}}
-{{- $mode := include "gen3.postgresTLSMode" . -}}
 {{- $bundled := get $global "dev" | default false -}}
+{{- $syfon := get .Values "syfon" | default dict -}}
+{{- $syfonEnabled := get $syfon "enabled" | default false -}}
+{{- if or $bundled $syfonEnabled -}}
+{{- $mode := include "gen3.postgresTLSMode" . -}}
 {{- $secretName := include "gen3.postgresTLSSecretName" . -}}
 {{- $caKey := include "gen3.postgresTLSCAKey" . -}}
 {{- $postgresql := .Values.postgresql | default dict -}}
@@ -63,7 +66,7 @@
     {{- end -}}
   {{- else -}}
     {{- $ca := genCA (printf "%s-postgres-ca" $serviceName) 3650 -}}
-    {{- $server := genSignedCert $serviceName nil $dnsNames 365 $ca -}}
+    {{- $server := genSignedCert $serviceName nil $dnsNames 3650 $ca -}}
     {{- $existingCA = $ca.Cert | b64enc -}}
     {{- $existingCert = $server.Cert | b64enc -}}
     {{- $existingKey = $server.Key | b64enc -}}
@@ -110,4 +113,5 @@ spec:
     name: {{ $issuerName | quote }}
     kind: {{ $issuerKind | quote }}
     group: {{ $issuerGroup | quote }}
+{{- end -}}
 {{- end -}}

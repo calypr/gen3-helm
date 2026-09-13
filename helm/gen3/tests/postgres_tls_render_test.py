@@ -6,6 +6,7 @@ import pathlib
 import ssl
 import subprocess
 import tempfile
+import time
 import unittest
 
 import yaml
@@ -93,6 +94,10 @@ class PostgresTLSRenderTests(unittest.TestCase):
             certificate_file.write(leaf)
             certificate_file.flush()
             decoded = ssl._ssl._test_decode_cert(certificate_file.name)
+        self.assertGreater(
+            ssl.cert_time_to_seconds(decoded["notAfter"]),
+            time.time() + (9 * 365 * 24 * 60 * 60),
+        )
         sans = sorted(value for kind, value in decoded["subjectAltName"] if kind == "DNS")
         self.assertEqual(
             sans,
@@ -188,6 +193,19 @@ class PostgresTLSRenderTests(unittest.TestCase):
             if volume["name"] == "raw-certificates"
         )
         self.assertEqual(raw_certificate_volume["secret"]["secretName"], "gen3-postgresql-tls")
+
+    def test_external_mode_without_syfon_skips_syfon_tls_validation(self):
+        rendered = resources(
+            render(
+                "global.postgres.tls.mode=selfSigned",
+                "global.postgres.tls.secretName=unused-postgres-tls",
+                "syfon.enabled=false",
+                external=True,
+            )
+        )
+        self.assertFalse(any(item.get("kind") == "Certificate" for item in rendered))
+        self.assertFalse(any(item.get("kind") == "StatefulSet" for item in rendered))
+        self.assertFalse(any(item.get("kind") == "Deployment" for item in rendered))
 
     def test_invalid_tls_combinations_fail_render(self):
         invalid = (
