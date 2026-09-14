@@ -96,8 +96,6 @@ argo-wrapper:
   # -- (bool) Whether to deploy the argo-wrapper subchart.
   enabled: false
 
-
-
 aws-es-proxy:
   # -- (bool) Whether to deploy the aws-es-proxy subchart.
   enabled: false

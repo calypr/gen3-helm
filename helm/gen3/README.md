@@ -1,6 +1,6 @@
 # gen3
 
-![Version: 0.1.21](https://img.shields.io/badge/Version-0.1.21-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
+![Version: 0.3.60](https://img.shields.io/badge/Version-0.3.60-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
 
 
 Helm chart to deploy Gen3 Data Commons
@@ -61,30 +61,30 @@ API routes remain protected by the configured authentication and authorization.
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../ambassador | ambassador | 0.1.9 |
-| file://../arborist | arborist | 0.1.9 |
-| file://../argo-wrapper | argo-wrapper | 0.1.5 |
-| file://../audit | audit | 0.1.10 |
-| file://../aws-es-proxy | aws-es-proxy | 0.1.7 |
-| file://../common | common | 0.1.8 |
-| file://../frontend-framework | frontend-framework | 0.1.2 |
-| file://../etl | etl | 0.1.0 |
-| file://../fence | fence | 0.1.14 |
-| file://../guppy | guppy | 0.1.9 |
-| file://../hatchery | hatchery | 0.1.7 |
-| file://../indexd | indexd | 0.1.11 |
-| file://../manifestservice | manifestservice | 0.1.11 |
-| file://../metadata | metadata | 0.1.9 |
-| file://../peregrine | peregrine | 0.1.10 |
-| file://../pidgin | pidgin | 0.1.8 |
-| file://../requestor | requestor | 0.1.9 |
-| file://../revproxy | revproxy | 0.1.12 |
-| file://../sheepdog | sheepdog | 0.1.11 |
-| file://../sower | sower | 0.1.7 |
-| file://../ssjdispatcher | ssjdispatcher | 0.1.7 |
-| file://../wts | wts | 0.1.11 |
+| file://../ambassador | ambassador | 0.1.38 |
+| file://../arborist | arborist | 0.1.35 |
+| file://../argo-wrapper | argo-wrapper | 0.1.31 |
+| file://../aws-es-proxy | aws-es-proxy | 0.1.42 |
+| file://../common | common | 0.1.37 |
+| file://../frontend-framework | frontend-framework | 0.1.30 |
+| file://../fence | fence | 0.1.79 |
+| file://../fhir-server | fhir-server | 0.1.0 |
+| file://../funnel | funnel | 0.1.77 |
+| file://../gecko | gecko | 0.1.0 |
+| file://../grip | grip | 0.1.0 |
+| file://../guppy | guppy | 0.1.38 |
+| file://../hatchery | hatchery | 0.1.70 |
+| file://../kafka | kafka | 32.1.3 |
+| file://../requestor | requestor | 0.1.35 |
+| file://../redis | redis | 0.1.0 |
+| file://../revproxy | revproxy | 0.1.62 |
+| file://../sower | sower | 0.1.47 |
+| https://helm.elastic.co | elasticsearch | 7.17.3 |
 | https://charts.bitnami.com/bitnami | postgresql | 11.9.13 |
-| https://helm.elastic.co | elasticsearch | 7.10.2 |
+| file://../image-viewer | image-viewer | 0.1.0 |
+| file://../viv | viv | 0.1.0 |
+| file://../syfon | syfon | 0.1.2 |
+| file://../loom | loom | 0.1.3 |
 
 ## Values
 
