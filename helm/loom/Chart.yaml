@@ -1,0 +1,11 @@
+apiVersion: v2
+name: loom
+description: Loom FHIR dataframe GraphQL server
+type: application
+version: 0.1.3
+appVersion: "f6d8ece"
+keywords:
+  - fhir
+  - arangodb
+  - graphql
+  - dataframe

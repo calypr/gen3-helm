@@ -39,8 +39,6 @@ global:
   revproxyArn: arn:aws:acm:us-east-1:123456:certificate
   # -- (string) URL of the data dictionary.
   dictionaryUrl: https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json
-  # -- (string) Portal application name.
-  portalApp: gitops
   # -- (string) S3 bucket name for Kubernetes manifest files.
   kubeBucket: kube-gen3
   # -- (string) S3 bucket name for log files.
