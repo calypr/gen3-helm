@@ -38,8 +38,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
-            httpGet:
-              path: /api/healthz
+            tcpSocket:
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 60
