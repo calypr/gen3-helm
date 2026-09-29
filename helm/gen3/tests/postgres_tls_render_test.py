@@ -84,6 +84,54 @@ def env_values(pod):
 
 
 class PostgresTLSRenderTests(unittest.TestCase):
+    def test_bundled_postgresql_images_preserve_tls_init_in_both_modes(self):
+        init_modes = (
+            ((), "copy-certs"),
+            (("postgresql.volumePermissions.enabled=true",), "init-chmod-data"),
+        )
+        for overrides, init_name in init_modes:
+            with self.subTest(init_name=init_name):
+                rendered = resources(render(*overrides))
+                postgres = resource(rendered, "StatefulSet", "tls-test-postgresql")
+                pod_spec = postgres["spec"]["template"]["spec"]
+                init_container = next(
+                    item for item in pod_spec["initContainers"] if item["name"] == init_name
+                )
+                self.assertEqual(
+                    init_container["image"],
+                    "docker.io/bitnamilegacy/bitnami-shell-archived:11-debian-11-r45",
+                )
+                self.assertIn(
+                    "cp /tmp/certs/* /opt/bitnami/postgresql/certs/",
+                    "\n".join(init_container["command"]),
+                )
+                init_mounts = {
+                    mount["name"]: mount["mountPath"]
+                    for mount in init_container["volumeMounts"]
+                }
+                self.assertEqual(init_mounts["raw-certificates"], "/tmp/certs")
+                self.assertEqual(
+                    init_mounts["postgresql-certificates"],
+                    "/opt/bitnami/postgresql/certs",
+                )
+                certificate_volume = next(
+                    volume
+                    for volume in pod_spec["volumes"]
+                    if volume["name"] == "raw-certificates"
+                )
+                self.assertEqual(
+                    certificate_volume["secret"]["secretName"], "gen3-postgresql-tls"
+                )
+                postgres_container = pod_spec["containers"][0]
+                self.assertEqual(
+                    postgres_container["image"],
+                    "docker.io/bitnamilegacy/postgresql:14.5.0-debian-11-r35",
+                )
+                self.assertIn(
+                    {"name": "POSTGRESQL_ENABLE_TLS", "value": "yes"},
+                    postgres_container["env"],
+                )
+
     def test_self_signed_renders_san_certificate_and_shared_trust(self):
         rendered = resources(render("global.postgres.tls.mode=selfSigned"))
         tls_secret = resource(rendered, "Secret", "gen3-postgresql-tls")

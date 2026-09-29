@@ -35,8 +35,47 @@ spec:
       serviceAccountName: {{ include "gecko.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if and .Values.storageChainAuditCache.enabled .Values.storageChainAuditCache.waitForRedis.enabled }}
       initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.waitForReady.image | quote }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gecko-dbcreds
+                  key: password
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: gecko-dbcreds
+                  key: username
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: gecko-dbcreds
+                  key: database
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: gecko-dbcreds
+                  key: host
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: gecko-dbcreds
+                  key: port
+            - name: PGSSLMODE
+              value: disable
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until psql -Atqc 'SELECT 1' >/dev/null 2>&1; do
+                echo "waiting for PostgreSQL at ${PGHOST}:${PGPORT}"
+                sleep 2
+              done
+        {{- if and .Values.storageChainAuditCache.enabled .Values.storageChainAuditCache.waitForRedis.enabled }}
         - name: wait-for-audit-cache
           image: {{ .Values.storageChainAuditCache.waitForRedis.image | quote }}
           imagePullPolicy: IfNotPresent
@@ -55,7 +94,7 @@ spec:
                 echo "waiting for storage-chain audit cache redis at {{ .Values.storageChainAuditCache.waitForRedis.host }}:{{ .Values.storageChainAuditCache.waitForRedis.port }}"
                 sleep 2
               done
-      {{- end }}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -72,7 +111,7 @@ spec:
               port: http
           readinessProbe:
             httpGet:
-              path: /health
+              path: /config/projects/summary
               port: http
 
           resources:

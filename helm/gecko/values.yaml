@@ -96,6 +96,9 @@ postgres:
     enabled: true
     # -- (string) Image used for DB initialization. Must include psql.
     image: postgres:16
+  waitForReady:
+    # -- (string) Image used to check the Gecko database before the app starts. Must include psql.
+    image: postgres:16
 
 # -- (map) Postgresql subchart settings if deployed separately option is set to "true".
 # Disable persistence by default so we can spin up and down ephemeral environments
