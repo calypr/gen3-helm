@@ -42,8 +42,6 @@ global:
   revproxyArn: arn:aws:acm:us-east-1:123456:certificate
   # -- (string) URL of the data dictionary.
   dictionaryUrl: https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json
-  # -- (string) Portal application name.
-  portalApp: gitops
   # -- (string) S3 bucket name for Kubernetes manifest files.
   kubeBucket: kube-gen3
   # -- (string) S3 bucket name for log files.
@@ -148,6 +146,9 @@ ingress:
   className: ""
   # -- (map) Annotations to add to the ingress.
   annotations:
+    # The outer ingress must accept the same large uploads as revproxy's
+    # service-specific locations; otherwise it rejects them before revproxy.
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-buffer-size: "256k"
     nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
     nginx.ingress.kubernetes.io/proxy-busy-buffers-size: "512k"

@@ -1,5 +1,14 @@
 fullnameOverride: syfon
 
+global:
+  postgres:
+    tls:
+      # The umbrella chart sets this to selfSigned for its bundled PostgreSQL.
+      # Standalone Syfon installs remain backwards compatible with plaintext DBs.
+      mode: disabled
+      secretName: ""
+      caKey: ca.crt
+
 replicaCount: 1
 
 image:
@@ -12,6 +21,7 @@ service:
   port: 8080
 
 config:
+  profile: production
   port: 8080
   auth:
     mode: gen3
@@ -19,7 +29,7 @@ config:
     # Defaults to https://<global.hostname>/user when omitted.
     fence_url: ""
   routes:
-    docs: true
+    docs: false
     ga4gh: true
     internal: true
     lfs: true
@@ -55,7 +65,11 @@ postgres:
     db_username: syfon_user
     db_password: syfon_pass
     db_database: syfon_db
-    db_sslmode: disable
+  pool:
+    maxOpenConnections: 25
+    maxIdleConnections: 10
+    connectionMaxLifetimeSeconds: 1800
+    connectionMaxIdleTimeSeconds: 300
   admin:
     existingSecret: ""
     secretName: syfon-db-admin
@@ -68,6 +82,9 @@ postgres:
     enabled: true
     image: postgres:16
     waitTimeoutSeconds: 180
+    activeDeadlineSeconds: 300
+    backoffLimit: 4
+    ttlSecondsAfterFinished: 86400
 
 serviceCreds:
   enabled: true
@@ -82,13 +99,13 @@ extraEnv: []
 
 probes:
   liveness:
-    path: /healthz
+    path: /livez
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 2
     failureThreshold: 3
   readiness:
-    path: /healthz
+    path: /readyz
     initialDelaySeconds: 5
     periodSeconds: 5
     timeoutSeconds: 2

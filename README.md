@@ -32,6 +32,18 @@ In a production deployment:
 
 ## Configuration
 
+### Loom FHIR dataframe service
+
+The optional `helm/loom` chart deploys the Loom FHIR dataframe GraphQL server
+alongside a single chart-owned ClickHouse instance. See
+[`helm/loom/README.md`](./helm/loom/README.md) for the local-cluster smoke test,
+managed-backend configuration, and persistence settings.
+
+The local ClickHouse service is `clickhouse:9000`. ArangoDB is not
+silently deployed by the Gen3 parent chart: production installs must provide a
+managed/operator-owned ArangoDB service, while local smoke tests may enable
+the disposable backend in `helm/loom/values-local.yaml`.
+
 For a full set of configuration options see the [CONFIGURATION.md](./docs/CONFIGURATION.md) for a more in depth instructions on how to configure each service. 
 
 There's also an auto-generated table of basic configuration options here: 

@@ -129,7 +129,7 @@ This is by design, it’s waiting for your dbcreate job(s) to finish which signa
 
 ## Local Dev Linux (Ubuntu) / Rancher Desktop Problems:
 
-If you've followed the instructions, see services running, but can't go to `https://localhost` to see portal... keep reading.
+If you've followed the instructions, see services running, but can't go to `https://localhost` to see the frontend... keep reading.
 
 If you see an Apache webpage at `localhost` (installed by default in Ubuntu), you have to kill the Apache service.
 
@@ -194,6 +194,5 @@ Other similar tools for developers include:
 
 
 These command-line tools can be a great option for developers who prefer to work in the terminal and want a more streamlined and efficient way to interact with their cluster. They are lightweight, easy to install and have a small footprint. They provide a simple and efficient way to manage and monitor your cluster.
-
 
 

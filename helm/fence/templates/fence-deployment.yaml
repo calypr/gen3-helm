@@ -49,12 +49,23 @@ spec:
               path: /_status
               port: http
             initialDelaySeconds: 60
-            periodSeconds: 60
-            timeoutSeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /_status
               port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /_status
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           command: ["/bin/bash"]
@@ -109,10 +120,18 @@ spec:
             - /bin/sh
             - -c
             - |
-              until redis-cli -h {{ .Values.authzSnapshotCache.waitForRedis.host }} -p {{ .Values.authzSnapshotCache.waitForRedis.port }} -a "$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG; do
-                echo "waiting for authz cache redis at {{ .Values.authzSnapshotCache.waitForRedis.host }}:{{ .Values.authzSnapshotCache.waitForRedis.port }}"
+              attempt=1
+              while [ "$attempt" -le "{{ .Values.authzSnapshotCache.waitForRedis.maxAttempts }}" ]; do
+                if redis-cli -h {{ .Values.authzSnapshotCache.waitForRedis.host }} -p {{ .Values.authzSnapshotCache.waitForRedis.port }} -a "$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG; then
+                  echo "authz cache redis is ready"
+                  exit 0
+                fi
+                echo "waiting for authz cache redis at {{ .Values.authzSnapshotCache.waitForRedis.host }}:{{ .Values.authzSnapshotCache.waitForRedis.port }} (attempt ${attempt}/{{ .Values.authzSnapshotCache.waitForRedis.maxAttempts }})"
+                attempt=$((attempt + 1))
                 sleep 2
               done
+              echo "authz cache redis did not become ready before the startup deadline" >&2
+              exit 1
         {{- end }}
         - name: fence-init
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

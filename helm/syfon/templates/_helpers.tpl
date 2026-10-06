@@ -12,7 +12,12 @@
 {{- else -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
 {{- end -}}
+{{- end -}}
+
+{{- define "syfon.deploymentName" -}}
+syfon-deployment
 {{- end -}}
 
 {{- define "syfon.labels" -}}
@@ -40,6 +45,86 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- .Values.postgres.admin.existingSecret -}}
 {{- else -}}
 {{- .Values.postgres.admin.secretName -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSMode" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $postgres := get $global "postgres" | default dict -}}
+{{- $tls := get $postgres "tls" | default dict -}}
+{{- $mode := get $tls "mode" | default "disabled" | toString | trim | lower -}}
+{{- if not (has $mode (list "disabled" "selfsigned" "certmanager" "existingsecret")) -}}
+  {{- fail (printf "global.postgres.tls.mode must be one of disabled, selfSigned, certManager, existingSecret; got %q" $mode) -}}
+{{- end -}}
+{{- $mode -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSSecretName" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $postgres := get $global "postgres" | default dict -}}
+{{- $tls := get $postgres "tls" | default dict -}}
+{{- $mode := include "syfon.postgresTLSMode" . -}}
+{{- $secretName := get $tls "secretName" | default "" | toString | trim -}}
+{{- if ne $mode "disabled" -}}
+  {{- if not $secretName -}}
+    {{- fail "global.postgres.tls.secretName is required when PostgreSQL TLS is enabled" -}}
+  {{- end -}}
+{{- end -}}
+{{- $secretName -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSCAKey" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $postgres := get $global "postgres" | default dict -}}
+{{- $tls := get $postgres "tls" | default dict -}}
+{{- $mode := include "syfon.postgresTLSMode" . -}}
+{{- $caKey := get $tls "caKey" | default "ca.crt" | toString | trim -}}
+{{- if ne $mode "disabled" -}}
+  {{- if not $caKey -}}
+    {{- fail "global.postgres.tls.caKey is required when PostgreSQL TLS is enabled" -}}
+  {{- end -}}
+{{- end -}}
+{{- $caKey -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSDatabaseSSLMode" -}}
+{{- if eq (include "syfon.postgresTLSMode" .) "disabled" -}}disable{{- else -}}verify-full{{- end -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSAllowInsecureTransport" -}}
+{{- if eq (include "syfon.postgresTLSMode" .) "disabled" -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{- define "syfon.postgresTLSRootCert" -}}
+{{- if ne (include "syfon.postgresTLSMode" .) "disabled" -}}/etc/ssl/certs/postgres/ca.crt{{- end -}}
+{{- end -}}
+
+{{- define "syfon.validateLegacyPostgresTLSValues" -}}
+{{- $postgres := .Values.postgres | default dict -}}
+{{- $app := get $postgres "app" | default dict -}}
+{{- $mode := include "syfon.postgresTLSDatabaseSSLMode" . -}}
+{{- $allowInsecure := include "syfon.postgresTLSAllowInsecureTransport" . -}}
+{{- if hasKey $app "db_sslmode" -}}
+  {{- $configured := get $app "db_sslmode" | toString | trim | lower -}}
+  {{- if ne $configured $mode -}}
+    {{- fail (printf "postgres.app.db_sslmode=%q contradicts global.postgres.tls.mode=%q; omit the deprecated value or set it to %q" $configured (include "syfon.postgresTLSMode" .) $mode) -}}
+  {{- end -}}
+{{- end -}}
+{{- if hasKey $app "allowInsecureTransport" -}}
+  {{- $configured := get $app "allowInsecureTransport" | toString | trim | lower -}}
+  {{- if ne $configured $allowInsecure -}}
+    {{- fail (printf "postgres.app.allowInsecureTransport=%q contradicts global.postgres.tls.mode=%q; omit the deprecated value or set it to %s" $configured (include "syfon.postgresTLSMode" .) $allowInsecure) -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "syfon.validateExtraEnv" -}}
+{{- $reserved := list "DRS_DB_SSLMODE" "DRS_DB_ALLOW_INSECURE_TRANSPORT" "PGSSLMODE" "PGSSLROOTCERT" -}}
+{{- range $entry := .Values.extraEnv | default list -}}
+  {{- $name := get $entry "name" | default "" | toString | trim -}}
+  {{- if has $name $reserved -}}
+    {{- fail (printf "extraEnv cannot override the database TLS variable %q" $name) -}}
+  {{- end -}}
 {{- end -}}
 {{- end -}}
 

@@ -46,5 +46,5 @@ spec:
             # can be removed once this is merged: https://github.com/uc-cdis/fence/pull/1096
             cd /fence
             export PYTHONPATH=/fence${PYTHONPATH:+:$PYTHONPATH}
-            /fence/.venv/bin/python -m bin.fence_create sync --arborist http://arborist-service --yaml /var/www/fence/user.yaml
+            /fence/.venv/bin/python -m bin.fence_create sync{{- if .Values.usersync.preserveExistingArboristState }} --preserve-existing-arborist-state{{- end }} --arborist http://arborist-service --yaml /var/www/fence/user.yaml
       restartPolicy: OnFailure
