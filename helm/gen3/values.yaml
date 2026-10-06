@@ -265,7 +265,9 @@ syfon:
       docs: true
 
 loom:
-  enabled: true
+  # -- (bool) Deploy Loom and its bundled ArangoDB and ClickHouse backends.
+  # Enable explicitly only in environments that run the new metadata stack.
+  enabled: false
   # ClickHouse needs headroom for wide dataframe materializations.
   # Override per environment when larger loads require it.
   clickstack:
