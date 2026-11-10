@@ -9,6 +9,9 @@ Keeper cluster is involved. The in-cluster endpoints are fixed at
 
 Set `GEN3_HOSTNAME` to the hostname of your Fence deployment. The hostname
 must match the issuer in the Gen3 access tokens used for testing.
+For Loom builds that require population mapping cursor signing, set
+`config.server.population_mapping_cursor_secret` in a private values file.
+Use a stable random secret of at least 16 characters.
 
 ```bash
 cd /path/to/gen3-helm

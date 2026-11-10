@@ -1,12 +1,12 @@
 # Funnel
 
-This chart deploys Funnel v0.12.3 with the Gen3 authorization plugin. The Gen3 umbrella chart keeps Funnel disabled by default. Set `funnel.enabled: true` to enable the publication service.
+This chart deploys Funnel with the Gen3 authorization plugin. The Gen3 umbrella chart keeps Funnel disabled by default. Set `funnel.enabled: true` to enable the publication service.
 
 ## Deployment requirements
 
 Set these values before enabling Funnel:
 
-- `Server.OidcAuth.ClientId`, `ClientSecret`, `RequireAudience`, and `RedirectURL`. Set `RedirectURL` to the public Funnel login URL, such as `https://commons.example.org/funnel/login`. `ServiceConfigURL` defaults to `https://<global.hostname>/user/.well-known/openid-configuration`. Override it if you use a different discovery endpoint.
+- `image.tag` must select a Funnel build that supports `Plugins.Authenticate`. The Gen3 plugin validates the existing Fence bearer token and supplies the user subject for task ownership.
 - `storage.workspace.storageClassName` to the OpenStack CSI StorageClass. The chart creates a native, per-task workspace claim with `ReadWriteOnce` access and a default size of `10Gi`.
 - `Plugins.Params.ETL_IMAGE` to the operator-approved metadata ETL image. The chart has no default ETL image.
 - `Plugins.Params.DRS_URL` to the trusted DRS/Syfon service. The default is `http://syfon:8080`.

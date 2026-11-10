@@ -3,7 +3,7 @@ module github.com/calypr/gen3-funnel-auth
 go 1.27.3
 
 require (
-	github.com/calypr/funnel v0.12.3
+	github.com/calypr/funnel v0.12.4-0.20261110230134-7e5edfad9098
 	github.com/hashicorp/go-plugin v1.8.0
 	google.golang.org/protobuf v1.36.12
 )

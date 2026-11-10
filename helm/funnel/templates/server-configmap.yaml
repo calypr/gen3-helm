@@ -1,16 +1,3 @@
-{{- $oidc := .Values.Server.OidcAuth -}}
-{{- $missing := list -}}
-{{- if not (or $oidc.ServiceConfigURL .Values.global.hostname) -}}
-{{- $missing = append $missing "ServiceConfigURL (or global.hostname)" -}}
-{{- end -}}
-{{- range $key := list "ClientId" "ClientSecret" "RequireAudience" "RedirectURL" -}}
-{{- if not (get $oidc $key) -}}
-{{- $missing = append $missing $key -}}
-{{- end -}}
-{{- end -}}
-{{- if $missing -}}
-{{- fail (printf "Configure funnel.Server.OidcAuth in your deployment values. Missing: %s" (join ", " $missing)) -}}
-{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

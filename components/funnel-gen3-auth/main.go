@@ -77,6 +77,9 @@ func main() {
 }
 
 func (a *Authorizer) PluginAction(params map[string]string, headers map[string]*funnelplugin.StringList, conf *config.Config, task *tes.Task, action funnelplugin.Type) (*funnelplugin.JobResponse, error) {
+	if action == funnelplugin.Type_AUTHENTICATE {
+		return authenticate(params["FENCE_URL"], headers), nil
+	}
 	if conf == nil {
 		return response(500, "Funnel configuration is unavailable", nil, nil), nil
 	}
@@ -107,12 +110,7 @@ func (a *Authorizer) PluginAction(params map[string]string, headers map[string]*
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	client := &http.Client{
-		Timeout: requestTimeout,
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	client := newUpstreamClient()
 
 	user, status, err := fetchFenceUser(ctx, client, settings.fenceURL, authorizationHeader)
 	if err != nil {
@@ -179,6 +177,37 @@ type pluginSettings struct {
 	loomURL  string
 	drsURL   string
 	etlImage string
+}
+
+func authenticate(fenceURL string, headers map[string]*funnelplugin.StringList) *funnelplugin.JobResponse {
+	authorization, _, err := getAuthorization(headers)
+	if err != nil {
+		return response(http.StatusUnauthorized, "A bearer authorization token is required", nil, nil)
+	}
+	fenceURL, err = serviceURL(fenceURL)
+	if err != nil {
+		return response(http.StatusInternalServerError, "Fence URL is invalid", nil, nil)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+	user, status, err := fetchFenceUser(ctx, newUpstreamClient(), fenceURL, authorization)
+	if err != nil {
+		return response(upstreamStatus(status), "Could not verify the Gen3 caller", nil, nil)
+	}
+	var subject string
+	if err := json.Unmarshal(user["sub"], &subject); err != nil || strings.TrimSpace(subject) == "" {
+		return response(http.StatusBadGateway, "Fence did not return a user subject", nil, nil)
+	}
+	return &funnelplugin.JobResponse{Code: http.StatusOK, UserId: subject}
+}
+
+func newUpstreamClient() *http.Client {
+	return &http.Client{
+		Timeout: requestTimeout,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 }
 
 func readSettings(params map[string]string) (pluginSettings, error) {

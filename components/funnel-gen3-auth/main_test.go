@@ -3,13 +3,47 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 	"text/template"
 
+	funnelplugin "github.com/calypr/funnel/api/plugin"
 	"github.com/calypr/funnel/api/tes"
 )
+
+func TestAuthenticateUsesFenceSubject(t *testing.T) {
+	fence := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/user/" || req.Header.Get("Cookie") != "" {
+			t.Error("unexpected Fence user request")
+		}
+		if req.Header.Get("Authorization") != "Bearer fixture" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, _ = w.Write([]byte(`{"sub":"42","name":"alice","is_admin":true}`))
+	}))
+	defer fence.Close()
+	plugin := &Authorizer{}
+	params := map[string]string{"FENCE_URL": fence.URL}
+	for _, tc := range []struct {
+		header  string
+		code    int64
+		subject string
+	}{
+		{"Bearer fixture", http.StatusOK, "42"},
+		{"Bearer forged", http.StatusUnauthorized, ""},
+		{"", http.StatusUnauthorized, ""},
+	} {
+		headers := map[string]*funnelplugin.StringList{"authorization": {Values: []string{tc.header}}}
+		got, err := plugin.PluginAction(params, headers, nil, nil, funnelplugin.Type_AUTHENTICATE)
+		if err != nil || got.GetCode() != tc.code || got.GetUserId() != tc.subject || got.GetConfig() != nil {
+			t.Errorf("authorization result = %v, %v", got, err)
+		}
+	}
+}
 
 func TestPublishSelectionRejectsUnsafeFileNames(t *testing.T) {
 	for _, path := range []string{"META/Patient\r\nX-Injected: yes.ndjson", "META/../Patient.ndjson", "META/Patient/extra.ndjson", "META/Patient\x00.ndjson"} {

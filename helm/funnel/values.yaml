@@ -19,7 +19,8 @@ global:
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: v0.12.3
+  # Set a Funnel image that supports Plugins.Authenticate.
+  tag: ""
   pullPolicy: IfNotPresent
   initContainers:
     - name: plugins
@@ -112,25 +113,9 @@ Server:
   # Port used for RPC communication.
   RPCPort: "9090"
 
-  # Require basic authentication for the server APIs using a password.
-  # If used, make sure to properly restrict access to the config file
-  # (e.g. chmod 600 funnel.config.yml)
-  # BasicAuth:
-  #   - User: user1
-  #     Password: abc123
-  #   - User: user2
-  #     Password: foobar
-
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
-  OidcAuth:
-    ServiceConfigURL: ""
-    ClientId: ""
-    ClientSecret: ""
-    RequireScope: ""
-    RequireAudience: ""
-    RedirectURL: ""
 
 RPCClient:
   # RPC server address

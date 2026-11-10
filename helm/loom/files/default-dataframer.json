@@ -1,7 +1,7 @@
 {
   "recipeSchemaVersion": 1,
   "name": "calypr-meta-default",
-  "translationVersion": "gen3-util-development-d461f11c7f0ccb078128349ccffd377e4014b62a-extension-columns-v2-research-subject",
+  "translationVersion": "gen3-util-development-d461f11c7f0ccb078128349ccffd377e4014b62a-extension-columns-v2-research-subject-v2",
   "outputs": [
     {
       "name": "DocumentReference",

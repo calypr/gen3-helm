@@ -1,6 +1,6 @@
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: v0.12.3
+  tag: ""
   pullPolicy: IfNotPresent
   initContainers:
     - name: plugins
@@ -14,14 +14,6 @@ image:
       volumeMounts:
         - name: plugin-volume
           mountPath: /opt/funnel/plugin-binaries
-
-Server:
-  OidcAuth:
-    ServiceConfigURL: ""
-    ClientId: ""
-    ClientSecret: ""
-    RequireAudience: ""
-    RedirectURL: ""
 
 storage:
   workspace:

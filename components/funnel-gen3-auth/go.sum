@@ -1,7 +1,7 @@
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
-github.com/calypr/funnel v0.12.3 h1:MQUUY3tRFD3C0W8Xv0DMJAkkNGaWUxB+gFeOJ6/TywY=
-github.com/calypr/funnel v0.12.3/go.mod h1:kBocjoibQ6LMll6tJGooyVBDO+yTbcOe/55bKc/YKq0=
+github.com/calypr/funnel v0.12.4-0.20261110230134-7e5edfad9098 h1:e2MvPelXwDQYJsLIGS5begUsdoGb/11k9iIwTXC3nOQ=
+github.com/calypr/funnel v0.12.4-0.20261110230134-7e5edfad9098/go.mod h1:kBocjoibQ6LMll6tJGooyVBDO+yTbcOe/55bKc/YKq0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=

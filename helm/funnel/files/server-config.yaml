@@ -78,8 +78,8 @@ EventWriters:
   {{- end }}
 
 Logger:
-  level: {{ .Values.Logger.level }}
-  outputFile: {{ .Values.Logger.outputFile }}
+  Level: {{ .Values.Logger.level | quote }}
+  OutputFile: {{ .Values.Logger.outputFile | quote }}
 
 Server:
   HostName: "{{ .Values.Server.HostName }}"
@@ -87,13 +87,6 @@ Server:
   RPCPort: "{{ .Values.Server.RPCPort }}"
   DisableHTTPCache: {{ .Values.Server.DisableHTTPCache }}
   TaskAccess: Owner
-  OidcAuth:
-    ServiceConfigURL: {{ .Values.Server.OidcAuth.ServiceConfigURL | default (printf "https://%s/user/.well-known/openid-configuration" .Values.global.hostname) | quote }}
-    ClientId: {{ .Values.Server.OidcAuth.ClientId | quote }}
-    ClientSecret: {{ .Values.Server.OidcAuth.ClientSecret | quote }}
-    RequireScope: {{ .Values.Server.OidcAuth.RequireScope | quote }}
-    RequireAudience: {{ .Values.Server.OidcAuth.RequireAudience | quote }}
-    RedirectURL: {{ .Values.Server.OidcAuth.RedirectURL | quote }}
 
 RPCClient:
   ServerAddress: {{ .Values.RPCClient.ServerAddress }}
@@ -174,6 +167,7 @@ Kafka:
 GenericS3: []
 
 Plugins:
+  Authenticate: true
   Path: {{ .Values.Plugins.Path }}
   Params:
     FENCE_URL: {{ .Values.Plugins.Params.FENCE_URL | quote }}
