@@ -88,12 +88,12 @@ Server:
   DisableHTTPCache: {{ .Values.Server.DisableHTTPCache }}
   TaskAccess: Owner
   OidcAuth:
-    ServiceConfigURL: {{ required "funnel.Server.OidcAuth.ServiceConfigURL is required" .Values.Server.OidcAuth.ServiceConfigURL | quote }}
-    ClientId: {{ required "funnel.Server.OidcAuth.ClientId is required" .Values.Server.OidcAuth.ClientId | quote }}
-    ClientSecret: {{ required "funnel.Server.OidcAuth.ClientSecret is required" .Values.Server.OidcAuth.ClientSecret | quote }}
+    ServiceConfigURL: {{ .Values.Server.OidcAuth.ServiceConfigURL | default (printf "https://%s/user/.well-known/openid-configuration" .Values.global.hostname) | quote }}
+    ClientId: {{ .Values.Server.OidcAuth.ClientId | quote }}
+    ClientSecret: {{ .Values.Server.OidcAuth.ClientSecret | quote }}
     RequireScope: {{ .Values.Server.OidcAuth.RequireScope | quote }}
-    RequireAudience: {{ required "funnel.Server.OidcAuth.RequireAudience is required" .Values.Server.OidcAuth.RequireAudience | quote }}
-    RedirectURL: {{ required "funnel.Server.OidcAuth.RedirectURL is required" .Values.Server.OidcAuth.RedirectURL | quote }}
+    RequireAudience: {{ .Values.Server.OidcAuth.RequireAudience | quote }}
+    RedirectURL: {{ .Values.Server.OidcAuth.RedirectURL | quote }}
 
 RPCClient:
   ServerAddress: {{ .Values.RPCClient.ServerAddress }}

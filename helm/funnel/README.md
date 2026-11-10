@@ -6,7 +6,7 @@ This chart deploys Funnel v0.12.3 with the Gen3 authorization plugin. The Gen3 u
 
 Set these values before enabling Funnel:
 
-- `Server.OidcAuth.ServiceConfigURL`, `ClientId`, `ClientSecret`, `RequireAudience`, and `RedirectURL`. The chart rejects empty values. Set `RedirectURL` to the public Funnel login URL, such as `https://commons.example.org/funnel/login`.
+- `Server.OidcAuth.ClientId`, `ClientSecret`, `RequireAudience`, and `RedirectURL`. Set `RedirectURL` to the public Funnel login URL, such as `https://commons.example.org/funnel/login`. `ServiceConfigURL` defaults to `https://<global.hostname>/user/.well-known/openid-configuration`. Override it if you use a different discovery endpoint.
 - `storage.workspace.storageClassName` to the OpenStack CSI StorageClass. The chart creates a native, per-task workspace claim with `ReadWriteOnce` access and a default size of `10Gi`.
 - `Plugins.Params.ETL_IMAGE` to the operator-approved metadata ETL image. The chart has no default ETL image.
 - `Plugins.Params.DRS_URL` to the trusted DRS/Syfon service. The default is `http://syfon:8080`.
