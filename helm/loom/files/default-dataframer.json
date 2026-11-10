@@ -1,7 +1,7 @@
 {
   "recipeSchemaVersion": 1,
   "name": "calypr-meta-default",
-  "translationVersion": "gen3-util-development-d461f11c7f0ccb078128349ccffd377e4014b62a-extension-columns-v1",
+  "translationVersion": "gen3-util-development-d461f11c7f0ccb078128349ccffd377e4014b62a-extension-columns-v2-research-subject",
   "outputs": [
     {
       "name": "DocumentReference",
@@ -64,7 +64,7 @@
       ]
     },
     {
-      "name": "Patient",
+      "name": "ResearchSubject",
       "rootResourceType": "ResearchSubject",
       "rowGrain": "study_enrollment",
       "collisionPolicy": "overwrite",
@@ -135,7 +135,7 @@
       "rowGrain": "expanded",
       "collisionPolicy": "overwrite",
       "expand": {"from": {"select": "root.member[]"}, "as": "member"},
-      "identity": {"name": "id", "expr": {"call": "uuid5", "args": [{"literal": "calypr.org"}, {"select": "root.id"}, {"call": "concat", "args": [{"literal": ","}, {"call": "reference_id", "args": [{"select": "member.entity.reference"}]}]}]}},
+      "identity": {"name": "id", "expr": {"call": "uuid5", "args": [{"literal": "aced-idp.org"}, {"select": "root.id"}, {"call": "concat", "args": [{"literal": ","}, {"call": "reference_id", "args": [{"select": "member.entity.reference"}]}]}]}},
       "fields": [
         {"name": "group_id", "expr": {"select": "root.id"}},
         {"name": "member_id", "expr": {"call": "reference_id", "args": [{"select": "member.entity.reference"}]}}

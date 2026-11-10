@@ -5,17 +5,35 @@ Kubernetes:
   DisableJobCleanup: {{ .Values.Kubernetes.DisableJobCleanup }}
   ReconcileRate: {{ .Values.Kubernetes.ReconcileRate }}
   Namespace: {{ .Release.Namespace }}
-  JobsNamespace: {{ .Values.Kubernetes.JobsNamespace }}
-  ServiceAccount: {{ .Values.Kubernetes.ServiceAccount }}
+  JobsNamespace: {{ .Values.Kubernetes.JobsNamespace | default .Release.Namespace | quote }}
+  ServiceAccount: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) | quote }}
+  WorkerImage: {{ printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) | quote }}
+  Storage:
+    WorkspaceVolume: workspace
+    WorkerContainer: funnel-worker
+    ExecutorContainer: funnel-executor
+    volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    volumeClaimTemplates:
+      - metadata:
+          name: workspace
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: {{ required "funnel.storage.workspace.storageClassName is required" .Values.storage.workspace.storageClassName | quote }}
+          resources:
+            requests:
+              storage: {{ .Values.storage.workspace.size | quote }}
   Resources:
     Defaults:
-      Cpus: {{ .Values.Kubernetes.Resources.Defaults.Cpus }}
-      RamGb: {{ .Values.Kubernetes.Resources.Defaults.RamGb }}
-      DiskGb: {{ .Values.Kubernetes.Resources.Defaults.DiskGb }}
+      Cpus: {{ .Values.Kubernetes.Resources.Defaults.Cpus | quote }}
+      RamGb: {{ .Values.Kubernetes.Resources.Defaults.RamGb | quote }}
+      DiskGb: {{ .Values.Kubernetes.Resources.Defaults.DiskGb | quote }}
     Limits:
-      Cpus: {{ .Values.Kubernetes.Resources.Limits.Cpus }}
-      RamGb: {{ .Values.Kubernetes.Resources.Limits.RamGb }}
-      DiskGb: {{ .Values.Kubernetes.Resources.Limits.DiskGb }}
+      Cpus: {{ .Values.Kubernetes.Resources.Limits.Cpus | quote }}
+      RamGb: {{ .Values.Kubernetes.Resources.Limits.RamGb | quote }}
+      DiskGb: {{ .Values.Kubernetes.Resources.Limits.DiskGb | quote }}
   Timeout:
     duration: {{ .Values.Kubernetes.Timeout.duration }}
 
@@ -49,23 +67,8 @@ Kubernetes:
   ExecutorTemplate: |
 {{ tpl ((.Values.Kubernetes.ExecutorTemplate | default (.Files.Get "files/executor-job.yaml"))) . | indent 4 }}
 
-  # PV template
-  PVTemplate: |
-{{ tpl (.Files.Get "files/worker-pv.yaml") . | indent 4 }}
-
-  # PVC template
-  PVCTemplate: |
-{{ tpl (.Files.Get "files/worker-pvc.yaml") . | indent 4 }}
-
-  # ServiceAccount template
-  ServiceAccountTemplate: |
-{{ tpl (.Files.Get "files/serviceaccount.yaml") . | indent 4 }}
-
-  RoleTemplate: |
-{{ tpl (.Files.Get "files/role.yaml") . | indent 4 }}
-
-  RoleBindingTemplate: |
-{{ tpl (.Files.Get "files/rolebinding.yaml") . | indent 4 }}
+  ConfigMapTemplate: |
+{{ tpl (.Files.Get "files/worker-configmap-template.yaml") . | indent 4 }}
 
 Database: {{ .Values.Database }}
 
@@ -83,6 +86,14 @@ Server:
   HTTPPort: "{{ .Values.Server.HTTPPort }}"
   RPCPort: "{{ .Values.Server.RPCPort }}"
   DisableHTTPCache: {{ .Values.Server.DisableHTTPCache }}
+  TaskAccess: Owner
+  OidcAuth:
+    ServiceConfigURL: {{ required "funnel.Server.OidcAuth.ServiceConfigURL is required" .Values.Server.OidcAuth.ServiceConfigURL | quote }}
+    ClientId: {{ required "funnel.Server.OidcAuth.ClientId is required" .Values.Server.OidcAuth.ClientId | quote }}
+    ClientSecret: {{ required "funnel.Server.OidcAuth.ClientSecret is required" .Values.Server.OidcAuth.ClientSecret | quote }}
+    RequireScope: {{ .Values.Server.OidcAuth.RequireScope | quote }}
+    RequireAudience: {{ required "funnel.Server.OidcAuth.RequireAudience is required" .Values.Server.OidcAuth.RequireAudience | quote }}
+    RedirectURL: {{ required "funnel.Server.OidcAuth.RedirectURL is required" .Values.Server.OidcAuth.RedirectURL | quote }}
 
 RPCClient:
   ServerAddress: {{ .Values.RPCClient.ServerAddress }}
@@ -120,14 +131,7 @@ BoltDB:
   Path: {{ .Values.BoltDB.Path }}
 
 AmazonS3:
-  Disabled: {{ .Values.AmazonS3.Disabled }}
-  AWSConfig:
-    MaxRetries: {{ .Values.AmazonS3.AWSConfig.MaxRetries }}
-    Key: {{ .Values.AmazonS3.AWSConfig.Key }}
-    Secret: {{ .Values.AmazonS3.AWSConfig.Secret }}
-  SSE:
-    CustomerKeyFile: {{ .Values.AmazonS3.SSE.CustomerKeyFile }}
-    KMSKey: {{ .Values.AmazonS3.SSE.KMSKey }}
+  Disabled: true
 
 DynamoDB:
   TableBasename: {{ .Values.DynamoDB.TableBasename }}
@@ -135,10 +139,6 @@ DynamoDB:
     Region: {{ .Values.DynamoDB.AWSConfig.Region }}
     Key: {{ .Values.DynamoDB.AWSConfig.Key }}
     Secret: {{ .Values.DynamoDB.AWSConfig.Secret }}
-
-Elastic:
-  IndexPrefix: {{ .Values.Elastic.IndexPrefix }}
-  URL: {{ .Values.Elastic.URL }}
 
 Datastore:
   Project: {{ .Values.Datastore.Project }}
@@ -152,11 +152,11 @@ Postgres:
   {{- else }}
   Host: {{ .Values.global.postgres.master.host }}
   {{- end }}
-  Database: {{ include "gen3.service-postgres" (dict "key" "database" "service" .Chart.Name "context" $) }}
-  User: {{ include "gen3.service-postgres" (dict "key" "username" "service" .Chart.Name "context" $) }}
-  Password: {{ include "gen3.service-postgres" (dict "key" "password" "service" .Chart.Name "context" $) }}
-  AdminUser: {{ .Values.Postgres.AdminUser }}
-  AdminPassword: {{ .Values.Postgres.AdminPassword }}
+  Database: {{ include "gen3.service-postgres" (dict "key" "database" "service" .Chart.Name "context" $) | quote }}
+  User: {{ include "gen3.service-postgres" (dict "key" "username" "service" .Chart.Name "context" $) | quote }}
+  Password: {{ include "gen3.service-postgres" (dict "key" "password" "service" .Chart.Name "context" $) | quote }}
+  AdminUser: {{ .Values.Postgres.AdminUser | quote }}
+  AdminPassword: {{ .Values.Postgres.AdminPassword | quote }}
   Timeout:
     duration: {{ .Values.Postgres.Timeout.duration }}
 
@@ -171,24 +171,13 @@ Kafka:
   {{- end }}
   Topic: {{ .Values.Kafka.Topic }}
 
-GenericS3:
-  {{- range .Values.GenericS3 }}
-  - Disabled: {{ .Disabled }}
-    Endpoint: {{ .Endpoint }}
-    Key: {{ .Key }}
-    Secret: {{ .Secret }}
-    Bucket: {{ .Bucket }}
-    Region: {{ .Region }}
-    KmsKeyID: {{ .KmsKeyID }}
-  {{- end }}
+GenericS3: []
 
-{{- if .Values.Plugins}}
 Plugins:
   Path: {{ .Values.Plugins.Path }}
   Params:
-  {{- if .Values.Plugins.Params }}
-  {{- range $key, $value := .Values.Plugins.Params }}
-    {{ $key }}: {{ $value }}
-  {{- end }}
-  {{- end }}
-{{- end}}
+    FENCE_URL: {{ .Values.Plugins.Params.FENCE_URL | quote }}
+    GECKO_URL: {{ .Values.Plugins.Params.GECKO_URL | quote }}
+    DRS_URL: {{ required "funnel.Plugins.Params.DRS_URL is required" .Values.Plugins.Params.DRS_URL | quote }}
+    ETL_IMAGE: {{ required "funnel.Plugins.Params.ETL_IMAGE is required" .Values.Plugins.Params.ETL_IMAGE | quote }}
+    LOOM_URL: {{ .Values.Plugins.Params.LOOM_URL | quote }}

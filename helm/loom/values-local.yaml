@@ -4,9 +4,6 @@ image:
   pullPolicy: IfNotPresent
 
 server:
-  noAuth: true
-  clickhouse:
-    database: default
   waitForBackends: true
 
 # Wide dataframe loads need more than ClickHouse's small default cgroup.

@@ -7,6 +7,9 @@ Keeper cluster is involved. The in-cluster endpoints are fixed at
 
 ## Local kind smoke test
 
+Set `GEN3_HOSTNAME` to the hostname of your Fence deployment. The hostname
+must match the issuer in the Gen3 access tokens used for testing.
+
 ```bash
 cd /path/to/gen3-helm
 export LOOM_REPO=/path/to/loom
@@ -15,15 +18,18 @@ kind create cluster --name loom
 kind load docker-image loom:dev --name loom
 helm upgrade --install loom ./helm/loom \
   --namespace loom --create-namespace \
-  -f ./helm/loom/values-local.yaml
+  -f ./helm/loom/values-local.yaml \
+  --set-string global.hostname="$GEN3_HOSTNAME"
 kubectl -n loom rollout status deployment/loom-deployment --timeout=5m
 kubectl -n loom port-forward svc/loom 8080:8080
 curl http://127.0.0.1:8080/health
 ```
 
-The local values use `--no-auth`, an ephemeral ArangoDB, and an ephemeral
-single-node ClickHouse. Set `clickstack.persistence.enabled: true` when the
-ClickHouse data must survive pod replacement.
+The local values inherit Gen3/Fence auth and deploy both ArangoDB and
+ClickHouse. ArangoDB stores the graph in `fhir_proto`. ClickHouse stores
+materialized tables in its built-in `default` database. Set
+`clickstack.persistence.enabled: true` when the ClickHouse data must survive
+pod replacement.
 
 To increase ClickHouse capacity for wide dataframe loads, override the local
 resource values before upgrading:
@@ -32,6 +38,7 @@ resource values before upgrading:
 helm upgrade --install loom ./helm/loom \
   --namespace loom --create-namespace \
   -f ./helm/loom/values-local.yaml \
+  --set-string global.hostname="$GEN3_HOSTNAME" \
   --set clickstack.resources.requests.memory=4Gi \
   --set clickstack.resources.limits.memory=8Gi
 ```
@@ -70,6 +77,7 @@ the Explorer REST resource.
 helm upgrade --install loom ./helm/loom \
   --namespace loom --create-namespace \
   -f ./helm/loom/values-local.yaml \
+  --set-string global.hostname="$GEN3_HOSTNAME" \
   --set-file dataframer.recipe=/path/to/dataframer.json
 ```
 
@@ -81,7 +89,8 @@ Load a resource file through
 the existing import API after port-forwarding, for example:
 
 ```bash
-curl -F project=ARANGODB_PROTO \
+curl -H "Authorization: Bearer $GEN3_ACCESS_TOKEN" \
+  -F project=ARANGODB_PROTO \
   -F resource_type=Patient \
   -F use_generic=true \
   -F file=@"$LOOM_REPO/META/Patient.ndjson" \

@@ -15,19 +15,20 @@ global:
   externalSecrets:
     deploy: false
     dbCreate: false
+  hostname: ""
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  pullPolicy: Always
+  tag: v0.12.3
+  pullPolicy: IfNotPresent
   initContainers:
-    # Plugin Init Container
     - name: plugins
-      image: quay.io/ohsu-comp-bio/funnel-plugins
-      tag: pr-1
-      pullPolicy: Always
+      image: ghcr.io/calypr/funnel-gen3-auth
+      tag: ""
+      pullPolicy: IfNotPresent
       command:
         - cp
-        - /app/build/plugins/authorizer
+        - /funnel-gen3-auth
         - /opt/funnel/plugin-binaries/auth-plugin
       volumeMounts:
         - name: plugin-volume
@@ -36,9 +37,7 @@ image:
 labels:
   app: funnel
 
-# Funnel is configured to use Gen3-managed PostgreSQL. The previous MongoDB
-# chart dependency was removed because MongoDB appears unused in this deployment
-# path; runtime PostgreSQL connectivity should be validated in-cluster.
+# Funnel uses the umbrella chart's PostgreSQL service and a dedicated role.
 postgres:
   # -- (bool) Whether the database should be created. Defaults to global.postgres.dbCreate.
   dbCreate:
@@ -50,8 +49,6 @@ postgres:
   username: funnel
   # -- (string) Port for Postgres.
   port: "5432"
-  # -- (string) Password for Postgres. Override this for production deployments.
-  password: example
 
 rbac:
   create: true
@@ -67,24 +64,17 @@ resources:
     memory: 2048Mi
     ephemeral_storage: 2048Mi
 
-# AWS STS Source + Region for S3 CSI Driver
-authenticationSource: pod
-stsRegion: us-east-1
-
 # Kubernetes Service Settings
 service:
   type: ClusterIP
   httpPort: 8000
   rpcPort: 9090
 
-# Funnel Worker + Executor storage (S3 bucket)
+# Funnel creates a native workspace PVC for each task.
 storage:
-  driver: aws-s3
-  size: 10Mi
-  accessMode: ReadWriteMany
-  className: s3-csi-sc
-  provisioner: s3.csi.aws.com
-  createStorageClass: true
+  workspace:
+    storageClassName: ""
+    size: 10Gi
 
 # Funnel default settings configured for Gen3-managed PostgreSQL.
 #
@@ -93,7 +83,7 @@ storage:
 # - Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
 
 # The name of the active server database backend
-# Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb, postgres
+# Available backends: boltdb, badger, datastore, dynamodb, mongodb, postgres
 Database: postgres
 
 # The name of the active compute backend
@@ -101,7 +91,7 @@ Database: postgres
 Compute: kubernetes
 
 # The name of the active event writer backend(s).
-# Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, postgres, kafka
+# Available backends: log, boltdb, badger, datastore, dynamodb, mongodb, postgres, kafka
 EventWriters:
   - postgres
   - log
@@ -134,6 +124,13 @@ Server:
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
+  OidcAuth:
+    ServiceConfigURL: ""
+    ClientId: ""
+    ClientSecret: ""
+    RequireScope: ""
+    RequireAudience: ""
+    RedirectURL: ""
 
 RPCClient:
   # RPC server address
@@ -235,12 +232,6 @@ DynamoDB:
     # AWS Secret Access Key
     Secret: ""
 
-Elastic:
-  # Prefix to use for indexes (task, events, nodes)
-  IndexPrefix: funnel
-  # URL of the elasticsearch server.
-  URL: http://localhost:9200
-
 # Google Cloud Datastore task database.
 Datastore:
   Project: ""
@@ -250,12 +241,8 @@ Datastore:
   CredentialsFile: ""
 
 Postgres:
-  Host: funnel-postgresql.default.svc.cluster.local
-  Database: funnel
-  User: funnel
-  Password: example
   AdminUser: postgres
-  AdminPassword: example
+  AdminPassword: ""
   Timeout:
     duration: 300s
 
@@ -430,8 +417,6 @@ Kubernetes:
 
   # Job template used for executing the tasks.
   ExecutorTemplate: ""
-  PVTemplate: ""
-  PVCTemplate: ""
 
   Resources:
     Defaults:
@@ -474,30 +459,7 @@ HTTPStorage:
   Timeout: 30s
 
 AmazonS3:
-  Disabled: false
-  # The maximum number of times that a request will be retried for failures.
-  AWSConfig:
-    MaxRetries: 10
-    # AWS Access key ID
-    Key: ""
-    # AWS Secret Access Key
-    Secret: ""
-  # Server Side Encryption (SSE) settings
-  SSE:
-    # Customer Provided Key
-    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html
-    CustomerKeyFile: ""
-    # KMS Key
-    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html
-    KMSKey: ""
-
-# Configure storage backends for S3 providers such as Minio and/or Ceph
-# GenericS3:
-#   - Disabled: true
-#     Endpoint: ""
-#     Key: ""
-#     Secret: ""
-#     KmsKeyID: ""
+  Disabled: true
 
 GoogleStorage:
   Disabled: false
@@ -531,7 +493,18 @@ volumes:
       name: funnel-server-config
 
   - name: plugin-volume
-    emptyDir: {}  # Shared volume
+    emptyDir: {}
+
+imagePullSecrets: []
+
+Plugins:
+  Path: /opt/funnel/plugin-binaries/auth-plugin
+  Params:
+    FENCE_URL: http://fence-service
+    GECKO_URL: http://gecko-service
+    DRS_URL: http://syfon:8080
+    ETL_IMAGE: ""
+    LOOM_URL: http://loom:8080
 
 # Overrides the default volumesMounts configured in the server deployment.
 # If custom volumesMounts are specified, they will fully replace the default values.

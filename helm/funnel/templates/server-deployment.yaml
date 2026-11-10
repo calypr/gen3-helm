@@ -23,12 +23,16 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/server-configmap.yaml") . | sha256sum }}
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
-      serviceAccountName: funnel-sa-{{ .Release.Namespace }}
+      serviceAccountName: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) | quote }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.image.initContainers }}
       initContainers:
       {{- range .Values.image.initContainers }}
         - name: {{ .name | default "initcontainer" }}
-          image: "{{ .image }}:{{ .tag }}"
+          image: "{{ .image }}:{{ required "funnel.image.initContainers[].tag is required; use the built plugin image tag" .tag }}"
           imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
           {{- if .command }}
           command:

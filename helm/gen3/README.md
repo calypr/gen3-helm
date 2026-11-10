@@ -69,7 +69,7 @@ API routes remain protected by the configured authentication and authorization.
 | file://../frontend-framework | frontend-framework | 0.1.30 |
 | file://../fence | fence | 0.1.79 |
 | file://../fhir-server | fhir-server | 0.1.0 |
-| file://../funnel | funnel | 0.1.77 |
+| file://../funnel | funnel | 0.1.78 |
 | file://../gecko | gecko | 0.1.0 |
 | file://../grip | grip | 0.1.0 |
 | file://../guppy | guppy | 0.1.38 |

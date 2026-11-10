@@ -152,6 +152,10 @@ funnel:
   # -- (bool) Whether to deploy the Funnel subchart.
   enabled: false
 
+sower:
+  # -- (bool) Sower is replaced by the opt-in Funnel publication endpoint.
+  enabled: false
+
 # -- (map) Configurations for guppy chart.
 guppy:
   # -- (bool) Whether to deploy the guppy subchart.

@@ -61,6 +61,8 @@ config:
   auth:
     mode: calypr
     calypr:
+      # Defaults to https://<global.hostname>/user. Override for another issuer.
+      trusted_issuer: ""
       request_timeout: 5s
       cache_ttl: 30s
 
