@@ -176,7 +176,7 @@ Node:
 
 Worker:
   # Files created during processing will be written in this directory.
-  WorkDir: ./funnel-work-dir
+  WorkDir: /var/lib/funnel/work
 
   # For low-level tuning.
   # How often to poll for cancel signals
