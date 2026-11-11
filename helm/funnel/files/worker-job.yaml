@@ -66,17 +66,13 @@ spec:
       {{- end }}
       `}}
 
-      # SecurityContext
-      # https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
-      {{`
-      {{- if .securityContext }}
       securityContext:
-        fsGroup: {{ .securityContext.fsGroup }}
-        runAsUser: {{ .securityContext.runAsUser }}
-        runAsGroup: {{ .securityContext.runAsGroup }}
-        supplementalGroups: {{ .securityContext.supplementalGroups }}
-      {{- end }}
-      `}}
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
 
       serviceAccountName: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) | quote }}
       automountServiceAccountToken: true
