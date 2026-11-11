@@ -1,6 +1,6 @@
 # sower
 
-![Version: 0.1.6](https://img.shields.io/badge/Version-0.1.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
+![Version: 0.1.47](https://img.shields.io/badge/Version-0.1.47-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: master](https://img.shields.io/badge/AppVersion-master-informational?style=flat-square)
 
 A Helm chart for gen3 sower
 
@@ -8,7 +8,7 @@ A Helm chart for gen3 sower
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../common | common | 0.1.10 |
+| file://../common | common | 0.1.37 |
 
 ## Values
 
@@ -52,7 +52,6 @@ A Helm chart for gen3 sower
 | global.kubeBucket | string | `"kube-gen3"` | S3 bucket name for Kubernetes manifest files. |
 | global.logsBucket | string | `"logs-gen3"` | S3 bucket name for log files. |
 | global.netPolicy | bool | `true` | Whether network policies are enabled. |
-| global.portalApp | string | `"gitops"` | Portal application name. |
 | global.postgres.dbCreate | bool | `true` | Whether the database should be created. |
 | global.postgres.externalSecret | string | `""` | Name of external secret. Disabled if empty |
 | global.postgres.master | map | `{"host":null,"password":null,"port":"5432","username":"postgres"}` | Master credentials to postgres. This is going to be the default postgres server being used for each service, unless each service specifies their own postgres |
@@ -158,4 +157,3 @@ A Helm chart for gen3 sower
 | tolerations | list | `[]` | Tolerations for the pods |
 | volumeMounts | list | `[{"mountPath":"/sower_config.json","name":"sower-config","readOnly":true,"subPath":"sower_config.json"}]` | Volumes to mount to the container. |
 | volumes | list | `[{"configMap":{"items":[{"key":"json","path":"sower_config.json"}],"name":"manifest-sower"},"name":"sower-config"}]` | Volumes to attach to the container. |
-

@@ -1,37 +1,31 @@
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: feature-plugins-cleanup
-  pullPolicy: Always
-  # Plugin Init Container
-  initContainer:
-    image: quay.io/ohsu-comp-bio/funnel-plugins
-    tag: feature-auth-proto-config
-    pullPolicy: Always
-    command:
-      - cp
-      - /app/build/plugins/authorizer
-      - /opt/funnel/plugin-binaries/auth-plugin
+  tag: ""
+  pullPolicy: IfNotPresent
+  initContainers:
+    - name: plugins
+      image: ghcr.io/calypr/funnel-gen3-auth
+      tag: REPLACE_WITH_BUILT_IMAGE_TAG
+      pullPolicy: IfNotPresent
+      command:
+        - cp
+        - /funnel-gen3-auth
+        - /opt/funnel/plugin-binaries/auth-plugin
+      volumeMounts:
+        - name: plugin-volume
+          mountPath: /opt/funnel/plugin-binaries
 
-Logger:
-  Level: debug
-
-GenericS3:
-  - Disabled: false
-    Endpoint: "s3.us-west-2.amazonaws.com"
-    Key: "you-bucket-key-goes-here"
-    Secret: "your-bucket-secret-goes-here"
-    Bucket: funnel-testing
-    Region: us-west-2
-
-AmazonS3:
-  Disabled: true
+storage:
+  workspace:
+    storageClassName: ""
+    size: 10Gi
 
 Plugins:
-  Path: plugin-binaries/auth-plugin
   Params:
-    Host: http://funnel-plugin-test-server:8080/token?user=
+    ETL_IMAGE: ""
+    DRS_URL: http://syfon:8080
+    LOOM_URL: http://loom:8080
 
 Kubernetes:
-  JobsNamespace: "funnel"
-  Namespace:     "funnel"
-  ReconcileRate: 6s
+  JobsNamespace: ""
+  ReconcileRate: 10s

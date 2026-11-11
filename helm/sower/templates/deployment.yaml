@@ -15,6 +15,8 @@ spec:
     {{- toYaml .Values.strategy | nindent 8 }}  
   template:
     metadata:
+      annotations:
+        checksum/manifest-sower: {{ include (print $.Template.BasePath "/manifest-sower.yaml") . | sha256sum }}
       labels:
         {{- include "sower.selectorLabels" . | nindent 8 }}
         public: "yes"        

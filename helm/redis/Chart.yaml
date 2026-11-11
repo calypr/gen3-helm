@@ -7,5 +7,5 @@ appVersion: "7.2"
 
 dependencies:
 - name: common
-  version: 0.1.10
+  version: 0.1.37
   repository: file://../common

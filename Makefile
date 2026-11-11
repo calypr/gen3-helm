@@ -1,6 +1,7 @@
 all: help
 
 update: ## Update from the local helm chart repository
+	@helm dependency update ./helm/funnel --skip-refresh
 	@helm dependency update ./helm/gen3
 
 local: DEPLOY=local

@@ -1,3 +1,7 @@
+{{- $tag := required "funnel.image.tag must select a Funnel build with Plugins.Authenticate" .Values.image.tag -}}
+{{- if eq $tag "v0.12.3" -}}
+{{- fail "Funnel v0.12.3 does not support Plugins.Authenticate. Select a newer build in funnel.image.tag." -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,12 +27,16 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/server-configmap.yaml") . | sha256sum }}
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
-      serviceAccountName: funnel-sa-{{ .Release.Namespace }}
+      serviceAccountName: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) | quote }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.image.initContainers }}
       initContainers:
       {{- range .Values.image.initContainers }}
         - name: {{ .name | default "initcontainer" }}
-          image: "{{ .image }}:{{ .tag }}"
+          image: "{{ .image }}:{{ required "funnel.image.initContainers[].tag is required; use the built plugin image tag" .tag }}"
           imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
           {{- if .command }}
           command:
@@ -55,7 +63,7 @@ spec:
       containers:
         - name: funnel
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           command:
             - 'funnel'
             - 'server'

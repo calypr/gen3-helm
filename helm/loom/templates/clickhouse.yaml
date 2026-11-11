@@ -1,0 +1,115 @@
+{{- if .Values.clickstack.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: clickhouse-users
+  labels:
+    {{- include "loom.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clickhouse
+type: Opaque
+stringData:
+  loom.xml: |
+    <clickhouse>
+      <users>
+        <default>
+          <password>{{ .Values.clickstack.auth.password }}</password>
+          <networks>
+            <ip>0.0.0.0/0</ip>
+            <ip>::/0</ip>
+          </networks>
+        </default>
+      </users>
+    </clickhouse>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  labels:
+    {{- include "loom.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clickhouse
+spec:
+  selector:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: 8123
+      targetPort: http
+    - name: native
+      port: 9000
+      targetPort: native
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  labels:
+    {{- include "loom.labels" . | nindent 4 }}
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/component: clickhouse
+spec:
+  serviceName: clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clickhouse
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: clickhouse
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: clickhouse
+    spec:
+      containers:
+        - name: clickhouse
+          image: "{{ .Values.clickstack.image.repository }}:{{ .Values.clickstack.image.tag }}"
+          imagePullPolicy: {{ .Values.clickstack.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8123
+            - name: native
+              containerPort: 9000
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.clickstack.resources | nindent 12 }}
+          volumeMounts:
+            - name: clickhouse-data
+              mountPath: /var/lib/clickhouse
+            - name: clickhouse-users
+              mountPath: /etc/clickhouse-server/users.d/loom.xml
+              subPath: loom.xml
+      volumes:
+        - name: clickhouse-users
+          secret:
+            secretName: clickhouse-users
+        {{- if not .Values.clickstack.persistence.enabled }}
+        - name: clickhouse-data
+          emptyDir: {}
+        {{- end }}
+  {{- if .Values.clickstack.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: clickhouse-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.clickstack.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.clickstack.persistence.size }}
+  {{- end }}
+{{- end }}

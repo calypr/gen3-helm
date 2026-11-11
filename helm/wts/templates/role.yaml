@@ -1,9 +1,0 @@
-# TODO: name this so it can work in multiple namespaces
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: {{ include "wts.fullname" . }}
-rules:
-- apiGroups: [""]
-  resources: ["namespaces", "pods"]
-  verbs: ["get", "list"]
