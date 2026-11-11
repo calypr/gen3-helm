@@ -68,7 +68,7 @@ dependencies:
   repository: "file://../redis"
   condition: redis.enabled
 - name: revproxy
-  version: 0.1.63
+  version: 0.1.64
   repository: "file://../revproxy"
   condition: revproxy.enabled
 - name: sower
