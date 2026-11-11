@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: quay.io/ohsu-comp-bio/loom
-  tag: sha-f6d8ece
+  tag: sha-1a3836c
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""
@@ -66,12 +66,18 @@ config:
       request_timeout: 5s
       cache_ttl: 30s
 
-# Empty uses files/default-dataframer.json, the executable repository Explorer
-# baseline. It must not contain Builder presentation fields such as views,
-# filters, charts, table columns, or file actions. Override with
+# Empty uses files/default-dataframer.json, the executable dataframe recipe.
+# It must not contain Viewer presentation fields. Override with
 # --set-file dataframer.recipe=/path/to/recipe.json.
 dataframer:
   recipe: ""
+
+# Viewer definitions reference dataframer recipes by name and are published
+# against the exact execution for each project. Empty uses the chart defaults.
+# Override with --set-file projectConfigs.definitions=/path/to/project-configs.json.
+projectConfigs:
+  enabled: true
+  definitions: ""
 
 auth:
   basic:
