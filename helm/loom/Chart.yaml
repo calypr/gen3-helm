@@ -3,7 +3,7 @@ name: loom
 description: Loom FHIR dataframe GraphQL server
 type: application
 version: 0.1.6
-appVersion: "1b8ea1f"
+appVersion: "4600b3f"
 keywords:
   - fhir
   - arangodb

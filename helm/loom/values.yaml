@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: quay.io/ohsu-comp-bio/loom
-  tag: sha-1b8ea1f
+  tag: sha-4600b3f
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""
