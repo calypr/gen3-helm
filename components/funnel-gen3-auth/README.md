@@ -22,6 +22,12 @@ For `CREATE`, the plugin forwards the caller's bearer authorization to Fence `/u
 
 `AUTHENTICATE` validates the bearer token with Fence `/user/` and returns the verified `sub` to Funnel for task ownership. `GET` and `CANCEL` return an unchanged cloned config after Funnel checks ownership.
 
+## Dataframe publication
+
+The Builder submits a `calypr.publish-dataframe` task with `organization`, `project`, `explorerId`, and `receiptId`. The plugin checks the same Fence caller and project permission used for metadata and selects the trusted `/app/funnel-etl publish-dataframe` command. The job sends the caller's bearer token to Loom's existing publish API. It does not need a GitHub token.
+
+Set the trusted plugin parameter `DATAFRAME_ETL_IMAGE` to a worker image containing the dataframe command. Deploy that image and the matching plugin before enabling `NEXT_PUBLIC_LOOM_FUNNEL_PUBLISH=true` in the Calypr frontend. Funnel FULL task status must include executor stdout so the Builder can read Loom's publication result.
+
 ## Credential handling limits
 
 The GitHub token and caller bearer token are passed through Funnel's per-task executor configuration and Kubernetes job environment. This avoids persisting either token in the TES task record. The deployment does not use Kubernetes Secrets. The tokens can therefore be visible to principals who can read the relevant worker configuration or job objects. Fence currently returns an installation token; the plugin validates the broker's repository identity and expiry response but cannot claim that Fence's token is scoped to one repository. The broker token expires after its reported lifetime, and this plugin does not refresh it if a task waits in the queue past expiry.

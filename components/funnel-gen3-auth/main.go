@@ -23,13 +23,14 @@ import (
 )
 
 const (
-	publishTag       = "calypr.publish"
-	executorMarker   = "# CALYPR_ETL_ENV"
-	maxRequestBytes  = 1 << 20
-	maxResponseBytes = 1 << 20
-	maxMetadataFiles = 2000
-	maxFilePathBytes = 255
-	requestTimeout   = 15 * time.Second
+	publishTag          = "calypr.publish"
+	dataframePublishTag = "calypr.publish-dataframe"
+	executorMarker      = "# CALYPR_ETL_ENV"
+	maxRequestBytes     = 1 << 20
+	maxResponseBytes    = 1 << 20
+	maxMetadataFiles    = 2000
+	maxFilePathBytes    = 255
+	requestTimeout      = 15 * time.Second
 )
 
 var (
@@ -91,6 +92,9 @@ func (a *Authorizer) PluginAction(params map[string]string, headers map[string]*
 		return response(400, "Unsupported task action", effective, nil), nil
 	}
 
+	if task != nil && task.Tags[dataframePublishTag] != "" {
+		return createDataframeTask(params, headers, effective, task), nil
+	}
 	request, err := parsePublishRequest(task)
 	if err != nil {
 		return response(400, err.Error(), effective, nil), nil
@@ -241,14 +245,8 @@ func serviceURL(raw string) (string, error) {
 }
 
 func parsePublishRequest(task *tes.Task) (publishRequest, error) {
-	if task == nil {
-		return publishRequest{}, errors.New("Publish task is required")
-	}
-	if len(task.Executors) != 0 || len(task.Inputs) != 0 || len(task.Outputs) != 0 || task.Resources != nil || len(task.Volumes) != 0 {
-		return publishRequest{}, errors.New("Publish tasks cannot supply executors, inputs, outputs, resources, or volumes")
-	}
-	if _, exists := task.Tags["_WORKER_SA"]; exists {
-		return publishRequest{}, errors.New("Publish tasks cannot select a worker service account")
+	if err := validateRequestedTask(task); err != nil {
+		return publishRequest{}, err
 	}
 	raw, ok := task.Tags[publishTag]
 	if !ok || len(raw) == 0 || len(raw) > maxRequestBytes {
@@ -524,4 +522,17 @@ func injectExecutorEnvironment(template, accessToken, githubToken, inputJSON, lo
 
 func response(code int64, message string, conf *config.Config, task *tes.Task) *funnelplugin.JobResponse {
 	return &funnelplugin.JobResponse{Code: code, Message: message, Config: conf, Task: task}
+}
+
+func validateRequestedTask(task *tes.Task) error {
+	if task == nil {
+		return errors.New("Publish task is required")
+	}
+	if len(task.Executors) != 0 || len(task.Inputs) != 0 || len(task.Outputs) != 0 || task.Resources != nil || len(task.Volumes) != 0 {
+		return errors.New("Publish tasks cannot supply executors, inputs, outputs, resources, or volumes")
+	}
+	if _, exists := task.Tags["_WORKER_SA"]; exists {
+		return errors.New("Publish tasks cannot select a worker service account")
+	}
+	return nil
 }

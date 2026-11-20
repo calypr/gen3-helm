@@ -489,6 +489,7 @@ Plugins:
     GECKO_URL: http://gecko-service
     DRS_URL: http://syfon:8080
     ETL_IMAGE: ""
+    DATAFRAME_ETL_IMAGE: ""
     LOOM_URL: http://loom:8080
 
 # Overrides the default volumesMounts configured in the server deployment.

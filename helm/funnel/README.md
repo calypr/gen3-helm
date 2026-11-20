@@ -9,6 +9,7 @@ Set these values before enabling Funnel:
 - `image.tag` must select a Funnel build that supports `Plugins.Authenticate`. The Gen3 plugin validates the existing Fence bearer token and supplies the user subject for task ownership.
 - `storage.workspace.storageClassName` to the OpenStack CSI StorageClass. The chart creates a native, per-task workspace claim with `ReadWriteOnce` access and a default size of `10Gi`.
 - `Plugins.Params.ETL_IMAGE` to the operator-approved metadata ETL image. The chart has no default ETL image.
+- Set `Plugins.Params.DATAFRAME_ETL_IMAGE` to the published dataframe worker image to enable dataframe publication jobs.
 - `Plugins.Params.DRS_URL` to the trusted DRS/Syfon service. The default is `http://syfon:8080`.
 - `Plugins.Params.LOOM_URL` if Loom is not reachable at `http://loom:8080`.
 

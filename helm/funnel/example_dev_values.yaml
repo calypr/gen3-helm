@@ -23,6 +23,7 @@ storage:
 Plugins:
   Params:
     ETL_IMAGE: ""
+    DATAFRAME_ETL_IMAGE: ""
     DRS_URL: http://syfon:8080
     LOOM_URL: http://loom:8080
 

@@ -174,4 +174,5 @@ Plugins:
     GECKO_URL: {{ .Values.Plugins.Params.GECKO_URL | quote }}
     DRS_URL: {{ required "funnel.Plugins.Params.DRS_URL is required" .Values.Plugins.Params.DRS_URL | quote }}
     ETL_IMAGE: {{ required "funnel.Plugins.Params.ETL_IMAGE is required" .Values.Plugins.Params.ETL_IMAGE | quote }}
+    DATAFRAME_ETL_IMAGE: {{ .Values.Plugins.Params.DATAFRAME_ETL_IMAGE | quote }}
     LOOM_URL: {{ .Values.Plugins.Params.LOOM_URL | quote }}
