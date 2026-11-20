@@ -62,35 +62,3 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- "clickhouse://clickhouse:9000" -}}
 {{- end -}}
 {{- end -}}
-
-{{- define "loom.renderVMStorageObject" -}}
-{{- if not .object -}}
-true
-{{- else -}}
-{{- $annotations := .object.metadata.annotations | default dict -}}
-{{- $owner := get $annotations "meta.helm.sh/release-name" -}}
-{{- $namespace := get $annotations "meta.helm.sh/release-namespace" -}}
-{{- if and $owner (or (ne $owner .release.Name) (ne $namespace .release.Namespace)) -}}
-{{- fail (printf "Storage object %s belongs to another Helm release" .object.metadata.name) -}}
-{{- end -}}
-{{- if $owner -}}true{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "loom.vmStoragePermissions" -}}
-- name: prepare-data-directory
-  image: {{ .image | quote }}
-  command: ["/bin/sh", "-ec"]
-  args:
-    - 'chown {{ .owner }} /data && chmod 0750 /data'
-  securityContext:
-    runAsUser: 0
-    runAsGroup: 0
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop: [ALL]
-      add: [CHOWN, FOWNER]
-  volumeMounts:
-    - name: {{ .volume }}
-      mountPath: /data
-{{- end -}}

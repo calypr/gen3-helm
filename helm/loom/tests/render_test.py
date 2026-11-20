@@ -85,6 +85,29 @@ class LoomRenderTests(unittest.TestCase):
         self.assertEqual(claim_template["metadata"]["name"], "clickhouse-data")
         self.assertEqual(claim_template["spec"]["resources"]["requests"]["storage"], "6Gi")
 
+    def test_database_claims_use_the_selected_storage_class(self):
+        for storage_class in (None, "database-disks", ""):
+            with self.subTest(storage_class=storage_class):
+                overrides = [
+                    "--set", "arango.persistence.enabled=true",
+                    "--set", "clickstack.persistence.enabled=true",
+                ]
+                if storage_class is not None:
+                    overrides.extend([
+                        "--set-string", f"arango.persistence.storageClass={storage_class}",
+                        "--set-string", f"clickstack.persistence.storageClass={storage_class}",
+                    ])
+                rendered = resources(render(*overrides))
+                arango = resource(rendered, "PersistentVolumeClaim", "loom-arango-data")["spec"]
+                clickhouse = resource(rendered, "StatefulSet", "clickhouse")["spec"]
+                clickhouse_claim = clickhouse["volumeClaimTemplates"][0]["spec"]
+                for claim in (arango, clickhouse_claim):
+                    if storage_class is None:
+                        self.assertNotIn("storageClassName", claim)
+                    else:
+                        self.assertEqual(claim["storageClassName"], storage_class)
+                self.assertFalse(any(item["kind"] == "PersistentVolume" for item in rendered))
+
     def test_databases_can_mount_existing_claims(self):
         rendered = resources(render(
             "--set", "arango.persistence.enabled=true",
@@ -100,35 +123,6 @@ class LoomRenderTests(unittest.TestCase):
                          "dev-clickhouse")
         self.assertFalse(any(item["kind"] == "PersistentVolumeClaim" for item in rendered))
         self.assertNotIn("volumeClaimTemplates", clickhouse["spec"])
-
-
-    def test_vm_storage_creates_prebound_retained_volumes(self):
-        rendered = resources(render("--set", "vmStorage.enabled=true", "--set", "vmStorage.nodeHostname=vm-test"))
-        for name, kind, mount, size, owner in (
-            ("arangodb", "Deployment", "data", "30Gi", "0:0"),
-            ("clickhouse", "StatefulSet", "clickhouse-data", "6Gi", "101:101"),
-        ):
-            with self.subTest(name=name):
-                pv_name = f"loom-{name}-pv"
-                claim_name = f"{name}-data"
-                pv = resource(rendered, "PersistentVolume", pv_name)["spec"]
-                claim = resource(rendered, "PersistentVolumeClaim", claim_name)["spec"]
-                workload = resource(rendered, kind, name)
-                self.assertEqual(pv["hostPath"], {
-                    "path": f"/srv/loom-data/{name}", "type": "DirectoryOrCreate",
-                })
-                self.assertEqual(pv["persistentVolumeReclaimPolicy"], "Retain")
-                self.assertEqual(pv["capacity"]["storage"], size)
-                self.assertEqual(pv["nodeAffinity"]["required"]["nodeSelectorTerms"][0]["matchExpressions"][0]["values"], ["vm-test"])
-                self.assertEqual(pv["claimRef"], {"namespace": "loom-test", "name": claim_name})
-                self.assertEqual(claim["volumeName"], pv_name)
-                self.assertEqual(claim["resources"]["requests"]["storage"], size)
-                self.assertEqual(volume(workload, mount)["persistentVolumeClaim"]["claimName"],
-                                 claim_name)
-                self.assertNotIn("volumeClaimTemplates", workload["spec"])
-                init = workload["spec"]["template"]["spec"]["initContainers"][0]
-                self.assertEqual(init["volumeMounts"], [{"name": mount, "mountPath": "/data"}])
-                self.assertIn(f"chown {owner} /data", init["args"][0])
 
 
 if __name__ == "__main__":

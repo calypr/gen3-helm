@@ -33,43 +33,25 @@ ClickHouse. ArangoDB stores the graph in `fhir_proto`. ClickHouse stores
 materialized tables in its built-in `default` database.
 
 Both databases use pod-local storage by default. To retain data across pod
-replacement, enable persistence. For a cluster with static storage, create
-and bind two PVCs in the release namespace before applying these Gen3 values.
+replacement, enable persistence. The following Gen3 values request 30 GiB for
+ArangoDB and 6 GiB for ClickHouse from the cluster's default StorageClass.
 
 ```yaml
 loom:
   arango:
     persistence:
       enabled: true
-      existingClaim: arangodb-data
   clickstack:
     persistence:
       enabled: true
-      existingClaim: clickhouse-data
 ```
 
-For a single-node VM, the chart can manage the static storage with one setting.
-
-```yaml
-loom:
-  vmStorage:
-    enabled: true
-```
-
-VM mode discovers the single schedulable Linux node and stores data under
-`/srv/loom-data/arangodb` and `/srv/loom-data/clickhouse`. Set
-`vmStorage.nodeHostname` when rendering offline or targeting a multi-node cluster. Helm reuses matching claims
-and volumes when it can read them from the cluster. Otherwise, it creates
-pre-bound, retained volumes. Kubelet creates missing directories, and init
-containers set permissions on the mount roots. Use a connected Helm render
-(`--dry-run=server`) to preview reuse on a cluster with existing claims.
-The storage requests are binding capacities. Host directories share the
-VM filesystem's free space.
-
-On a cluster with dynamic provisioning, omit both `existingClaim` values to
-let the chart create the ArangoDB PVC and the ClickHouse StatefulSet create its
-claim. The chart retains its ArangoDB PVC when the release is uninstalled.
-ArangoDB replaces its pod before starting another pod on the same claim.
+Set `storageClass` under either persistence block to select a named class.
+The chart creates the ArangoDB claim. The ClickHouse StatefulSet creates its
+claim. Set `existingClaim` only when mounting a claim that already exists in
+the release namespace. The chart retains its ArangoDB claim when the release
+is uninstalled. ArangoDB replaces its pod before starting another pod on the
+same claim.
 
 Back up existing pod-local data before switching storage, then restore it
 into the new volumes. If ClickHouse already uses a StatefulSet claim template,
