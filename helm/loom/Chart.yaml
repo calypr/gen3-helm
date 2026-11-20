@@ -2,7 +2,7 @@ apiVersion: v2
 name: loom
 description: Loom FHIR dataframe GraphQL server
 type: application
-version: 0.1.7
+version: 0.1.8
 appVersion: "4600b3f"
 keywords:
   - fhir

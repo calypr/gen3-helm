@@ -89,36 +89,17 @@ loom:
 When ClickHouse is enabled, the chart mounts
 [`files/default-dataframer.json`](files/default-dataframer.json) at
 `/etc/loom/dataframer.json` and sets `server.dataframer.recipe` to that path.
-The recipe contains dataframe definitions only. Viewer presentation lives in
-the independent project-config catalog at
-[`files/default-project-configs.json`](files/default-project-configs.json),
-mounted at `/etc/loom/project-configs.json` and selected by
-`server.project_configs` when `projectConfigs.enabled` is true. Each config
-references the recipe by name and owns its views, table columns, filters, and
-charts. Configs for one project generation share the recipe's single published
-execution; they do not copy the recipe or run it separately. A new source
-publication activates updated project-config definitions against its exact
-generation and execution.
+Loom registers the recipe at startup. Publishing a project generation runs the
+recipe and creates the initial project view from the published outputs.
 
-Override the recipe and project-config catalog without rebuilding Loom:
+To override the recipe, pass
+`--set-file dataframer.recipe=/path/to/dataframer.json`.
+The chart mounts the recipe only when ClickHouse is enabled.
 
-```bash
-helm upgrade --install loom ./helm/loom \
-  --namespace loom --create-namespace \
-  -f ./helm/loom/values-local.yaml \
-  --set-string global.hostname="$GEN3_HOSTNAME" \
-  --set-file dataframer.recipe=/path/to/dataframer.json \
-  --set-file projectConfigs.definitions=/path/to/project-configs.json
-```
-
-The bundled project-config catalog references `calypr-meta-default`. If the
-recipe name changes, provide a matching catalog with
-`projectConfigs.definitions`; disable project configs with
-`--set projectConfigs.enabled=false` for a headless/custom-recipe deployment.
-The recipe file and `server.dataframer.recipe` are omitted when ClickHouse is
-disabled. The project-config file and `server.project_configs` are omitted when
-ClickHouse or project configs are disabled. Loom requires the configured recipe
-and any enabled config references to be valid at startup.
+For older Loom images that support `server.project_configs`, explicitly set
+`projectConfigs.enabled=true` to mount the legacy viewer catalog. To supply
+a custom catalog, pass
+`--set-file projectConfigs.definitions=/path/to/project-configs.json`.
 
 Load a resource file through
 the existing import API after port-forwarding, for example:

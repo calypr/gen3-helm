@@ -71,11 +71,9 @@ config:
 dataframer:
   recipe: ""
 
-# Viewer definitions reference dataframer recipes by name and are published
-# against the exact execution for each project. Empty uses the chart defaults.
-# Override with --set-file projectConfigs.definitions=/path/to/project-configs.json.
+# Enable only for older Loom images that support server.project_configs.
 projectConfigs:
-  enabled: true
+  enabled: false
   definitions: ""
 
 auth:

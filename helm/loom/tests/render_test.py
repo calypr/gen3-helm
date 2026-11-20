@@ -49,6 +49,9 @@ class LoomRenderTests(unittest.TestCase):
         )
         recipe = json.loads(secret["stringData"]["dataframer.json"])
         self.assertIn("extensionColumns", recipe["outputs"][0])
+        self.assertNotIn("project-configs.json", secret["stringData"])
+        config = yaml.safe_load(secret["stringData"]["config.yaml"])
+        self.assertNotIn("project_configs", config["server"])
 
         deployment = resource(rendered, "Deployment", "loom-deployment")
         container = next(
