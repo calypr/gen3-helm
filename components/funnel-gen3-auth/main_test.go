@@ -14,6 +14,16 @@ import (
 	"github.com/calypr/funnel/api/tes"
 )
 
+func TestPluginAdvertisesBearerAuthentication(t *testing.T) {
+	got, err := (&Authorizer{}).PluginAction(nil, nil, nil, nil, funnelplugin.Type_CAPABILITIES)
+	if err != nil || got.GetCode() != http.StatusOK {
+		t.Fatalf("capabilities response = %v, %v", got, err)
+	}
+	if caps := got.GetCapabilities(); len(caps) != 1 || caps[0] != funnelplugin.Type_AUTHENTICATE {
+		t.Fatalf("capabilities = %v, want AUTHENTICATE", caps)
+	}
+}
+
 func TestAuthenticateUsesFenceSubject(t *testing.T) {
 	fence := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/user/" || req.Header.Get("Cookie") != "" {
@@ -34,6 +44,7 @@ func TestAuthenticateUsesFenceSubject(t *testing.T) {
 		subject string
 	}{
 		{"Bearer fixture", http.StatusOK, "42"},
+		{"bearer fixture", http.StatusOK, "42"},
 		{"Bearer forged", http.StatusUnauthorized, ""},
 		{"", http.StatusUnauthorized, ""},
 	} {

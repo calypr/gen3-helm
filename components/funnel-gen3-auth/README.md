@@ -20,7 +20,7 @@ The task image and command come from trusted `ETL_IMAGE` and the fixed `/app/fun
 
 For `CREATE`, the plugin forwards the caller's bearer authorization to Fence `/user/`, checks the same parent resources and project `create` service permission as the former ETL `_can_create`, reads `src_repo` from Gecko's registered project configuration, then requests a GitHub installation token from Fence with `access: read`. The registered repository must be on `github.com` and match the requested organization and project.
 
-`AUTHENTICATE` validates the bearer token with Fence `/user/` and returns the verified `sub` to Funnel for task ownership. `GET` and `CANCEL` return an unchanged cloned config after Funnel checks ownership.
+`CAPABILITIES` advertises bearer authentication at Funnel startup without contacting Fence. `AUTHENTICATE` validates the bearer token with Fence `/user/` and returns the verified `sub` to Funnel for task ownership. `GET` and `CANCEL` return an unchanged cloned config after Funnel checks ownership.
 
 ## Dataframe publication
 

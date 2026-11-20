@@ -78,6 +78,12 @@ func main() {
 }
 
 func (a *Authorizer) PluginAction(params map[string]string, headers map[string]*funnelplugin.StringList, conf *config.Config, task *tes.Task, action funnelplugin.Type) (*funnelplugin.JobResponse, error) {
+	if action == funnelplugin.Type_CAPABILITIES {
+		return &funnelplugin.JobResponse{
+			Code:         http.StatusOK,
+			Capabilities: []funnelplugin.Type{funnelplugin.Type_AUTHENTICATE},
+		}, nil
+	}
 	if action == funnelplugin.Type_AUTHENTICATE {
 		return authenticate(params["FENCE_URL"], headers), nil
 	}
@@ -304,7 +310,7 @@ func getAuthorization(headers map[string]*funnelplugin.StringList) (string, stri
 	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") || parts[1] == "" {
 		return "", "", errors.New("missing bearer token")
 	}
-	return raw, parts[1], nil
+	return "Bearer " + parts[1], parts[1], nil
 }
 
 func fetchFenceUser(ctx context.Context, client *http.Client, fenceURL, authorizationHeader string) (map[string]json.RawMessage, int, error) {
