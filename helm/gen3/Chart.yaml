@@ -4,18 +4,10 @@ description: Helm chart to deploy Gen3 Data Commons
 
 # Dependencies
 dependencies:
-- name: ambassador
-  version: 0.1.38
-  repository: "file://../ambassador"
-  condition: ambassador.enabled
 - name: arborist
   version: 0.1.35
   repository: "file://../arborist"
   condition: arborist.enabled
-- name: argo-wrapper
-  version: 0.1.31
-  repository: "file://../argo-wrapper"
-  condition: argo-wrapper.enabled
 - name: aws-es-proxy
   version: 0.1.42
   repository: "file://../aws-es-proxy"
@@ -31,10 +23,6 @@ dependencies:
   version: 0.1.79
   repository: "file://../fence"
   condition: fence.enabled
-- name: fhir-server
-  version: 0.1.0
-  repository: "file://../fhir-server"
-  condition: fhir-server.enabled
 - name: funnel
   version: 0.1.80
   repository: "file://../funnel"
@@ -47,14 +35,6 @@ dependencies:
   version: "0.1.0"
   repository: "file://../grip"
   condition: grip.enabled
-- name: guppy
-  version: 0.1.38
-  repository: "file://../guppy"
-  condition: guppy.enabled
-- name: hatchery
-  version: 0.1.70
-  repository: "file://../hatchery"
-  condition: hatchery.enabled
 - name: kafka
   version: 32.1.3
   repository: "file://../kafka"
@@ -75,10 +55,6 @@ dependencies:
   version: "0.1.47"
   condition: sower.enabled
   repository: "file://../sower"
-- name: elasticsearch
-  version: 7.17.3
-  repository: "https://helm.elastic.co"
-  condition: elasticsearch.enabled
 - name: postgresql
   version: 11.9.13
   repository: "https://charts.bitnami.com/bitnami"
@@ -116,7 +92,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.3.63
+version: 0.3.64
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
