@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - feature/new-meta-stack
     paths:
       - components/funnel-gen3-auth/**
       - .github/workflows/funnel-gen3-auth.yaml
