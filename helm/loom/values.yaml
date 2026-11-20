@@ -40,7 +40,6 @@ server:
   listen: ":8080"
   noAuth: false
   datasetGenerations: false
-  schema: /app/schemas/graph-fhir.json
   arango:
     # Override only when the Loom-provided ArangoDB service is replaced.
     url: ""
