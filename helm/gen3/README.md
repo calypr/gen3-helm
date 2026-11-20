@@ -68,12 +68,9 @@ API routes remain protected by the configured authentication and authorization.
 | file://../fence | fence | 0.1.79 |
 | file://../funnel | funnel | 0.1.78 |
 | file://../gecko | gecko | 0.1.0 |
-| file://../grip | grip | 0.1.0 |
-| file://../kafka | kafka | 32.1.3 |
 | file://../requestor | requestor | 0.1.35 |
 | file://../redis | redis | 0.1.0 |
 | file://../revproxy | revproxy | 0.1.62 |
-| file://../sower | sower | 0.1.47 |
 | https://charts.bitnami.com/bitnami | postgresql | 11.9.13 |
 | file://../image-viewer | image-viewer | 0.1.0 |
 | file://../viv | viv | 0.1.0 |

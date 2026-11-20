@@ -31,14 +31,6 @@ dependencies:
   version: "0.1.0"
   repository: "file://../gecko"
   condition: gecko.enabled
-- name: grip
-  version: "0.1.0"
-  repository: "file://../grip"
-  condition: grip.enabled
-- name: kafka
-  version: 32.1.3
-  repository: "file://../kafka"
-  condition: kafka.enabled
 - name: requestor
   version: 0.1.35
   repository: "file://../requestor"
@@ -51,10 +43,6 @@ dependencies:
   version: 0.1.64
   repository: "file://../revproxy"
   condition: revproxy.enabled
-- name: sower
-  version: "0.1.47"
-  condition: sower.enabled
-  repository: "file://../sower"
 - name: postgresql
   version: 11.9.13
   repository: "https://charts.bitnami.com/bitnami"
@@ -92,7 +80,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.3.65
+version: 0.3.66
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to

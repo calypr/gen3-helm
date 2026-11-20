@@ -142,10 +142,6 @@ funnel:
   # -- (bool) Whether to deploy the Funnel subchart.
   enabled: false
 
-sower:
-  # -- (bool) Sower is replaced by the opt-in Funnel publication endpoint.
-  enabled: false
-
 requestor:
   # -- (bool) Whether to deploy the requestor subchart.
   enabled: true
