@@ -6,7 +6,7 @@ This chart deploys Funnel with the Gen3 authorization plugin. The Gen3 umbrella 
 
 Set these values before enabling Funnel:
 
-- `image.tag` must select a Funnel build that supports `Plugins.Authenticate`. The Gen3 plugin validates the existing Fence bearer token and supplies the user subject for task ownership.
+- `image.tag` must select a Funnel build that discovers authentication through the plugin capability check. The Gen3 plugin advertises bearer authentication at startup and supplies the verified Fence subject for task ownership.
 - `storage.workspace.storageClassName` to the OpenStack CSI StorageClass. The chart creates a native, per-task workspace claim with `ReadWriteOnce` access and a default size of `10Gi`.
 - `Plugins.Params.ETL_IMAGE` to the operator-approved metadata ETL image. The chart has no default ETL image.
 - Set `Plugins.Params.DATAFRAME_ETL_IMAGE` to the published dataframe worker image to enable dataframe publication jobs.
@@ -23,7 +23,7 @@ Funnel creates one native workspace claim per task. The worker and executor rema
 
 The plugin writes task-specific worker config to a ConfigMap. The config contains the caller access token, input data, and PostgreSQL credentials. Restrict ConfigMap read access to trusted operators and Funnel.
 
-The authorizer image workflow builds `components/funnel-gen3-auth/Dockerfile` and publishes `ghcr.io/calypr/funnel-gen3-auth`. Set the chart's plugin image tag to the built commit tag. If the package is private, set `imagePullSecrets` for the Funnel server and task Jobs.
+The authorizer image workflow builds `components/funnel-gen3-auth/Dockerfile` and publishes `ghcr.io/calypr/funnel-gen3-auth`. Set `image.initContainers[].image` and `image.initContainers[].tag` in your deployment values. See `example_dev_values.yaml` for the plugin init container. For a private registry, set `imagePullSecrets` to reference an existing registry Secret in the Funnel namespace. The Funnel server and task Jobs use that Secret to pull images.
 
 ## Selected-file publication
 

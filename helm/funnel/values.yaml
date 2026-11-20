@@ -19,12 +19,12 @@ global:
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  # Set a Funnel image that supports Plugins.Authenticate.
+  # Set a Funnel image that discovers plugin authentication capabilities.
   tag: ""
   pullPolicy: IfNotPresent
   initContainers:
     - name: plugins
-      image: ghcr.io/calypr/funnel-gen3-auth
+      image: ""
       tag: ""
       pullPolicy: IfNotPresent
       command:

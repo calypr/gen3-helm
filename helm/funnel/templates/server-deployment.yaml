@@ -36,7 +36,7 @@ spec:
       initContainers:
       {{- range .Values.image.initContainers }}
         - name: {{ .name | default "initcontainer" }}
-          image: "{{ .image }}:{{ required "funnel.image.initContainers[].tag is required; use the built plugin image tag" .tag }}"
+          image: {{ printf "%s:%s" (required "funnel.image.initContainers[].image is required; set the plugin image repository in deployment values" .image) (required "funnel.image.initContainers[].tag is required; use the built plugin image tag" .tag) | quote }}
           imagePullPolicy: {{ .pullPolicy | default "IfNotPresent" }}
           {{- if .command }}
           command:

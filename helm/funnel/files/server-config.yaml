@@ -167,7 +167,6 @@ Kafka:
 GenericS3: []
 
 Plugins:
-  Authenticate: true
   Path: {{ .Values.Plugins.Path }}
   Params:
     FENCE_URL: {{ .Values.Plugins.Params.FENCE_URL | quote }}
