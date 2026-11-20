@@ -78,7 +78,7 @@ API routes remain protected by the configured authentication and authorization.
 | file://../image-viewer | image-viewer | 0.1.0 |
 | file://../viv | viv | 0.1.0 |
 | file://../syfon | syfon | 0.1.2 |
-| file://../loom | loom | 0.1.3 |
+| file://../loom | loom | 0.1.7 |
 
 ## Values
 

@@ -1,3 +1,5 @@
+{{- $persistence := .Values.arango.persistence -}}
+{{- $claimName := $persistence.existingClaim | default (printf "%s-arango-data" (include "loom.fullname" .)) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,6 +9,11 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: 1
+  {{- if $persistence.enabled }}
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  {{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: arangodb
@@ -32,7 +39,29 @@ spec:
               mountPath: /var/lib/arangodb3
       volumes:
         - name: data
+          {{- if $persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $claimName | quote }}
+          {{- else }}
           emptyDir: {}
+          {{- end }}
+{{- if and $persistence.enabled (not $persistence.existingClaim) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $claimName | quote }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if ne $persistence.storageClass nil }}
+  storageClassName: {{ $persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $persistence.size | quote }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service

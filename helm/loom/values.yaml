@@ -112,6 +112,12 @@ arango:
     tag: "3.12"
     pullPolicy: IfNotPresent
   noAuth: true
+  persistence:
+    enabled: false
+    size: 10Gi
+    # Omit to use the default StorageClass. Set to "" for a classless PV.
+    storageClass: null
+    existingClaim: ""
 
 clickstack:
   enabled: true
@@ -123,6 +129,7 @@ clickstack:
     enabled: false
     size: 2Gi
     storageClass: ""
+    existingClaim: ""
   resources:
     requests:
       cpu: 250m

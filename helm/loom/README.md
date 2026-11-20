@@ -30,9 +30,33 @@ curl http://127.0.0.1:8080/health
 
 The local values inherit Gen3/Fence auth and deploy both ArangoDB and
 ClickHouse. ArangoDB stores the graph in `fhir_proto`. ClickHouse stores
-materialized tables in its built-in `default` database. Set
-`clickstack.persistence.enabled: true` when the ClickHouse data must survive
-pod replacement.
+materialized tables in its built-in `default` database.
+
+Both databases use pod-local storage by default. To retain data across pod
+replacement, enable persistence. For a cluster with static storage, create
+and bind two PVCs in the release namespace before applying these Gen3 values.
+
+```yaml
+loom:
+  arango:
+    persistence:
+      enabled: true
+      existingClaim: arangodb-data
+  clickstack:
+    persistence:
+      enabled: true
+      existingClaim: clickhouse-data
+```
+
+On a cluster with dynamic provisioning, omit both `existingClaim` values to
+let the chart create the ArangoDB PVC and the ClickHouse StatefulSet create its
+claim. The chart retains its ArangoDB PVC when the release is uninstalled.
+ArangoDB replaces its pod before starting another pod on the same claim.
+
+Back up existing pod-local data before switching storage, then restore it
+into the new volumes. If ClickHouse already uses a StatefulSet claim template,
+keep that mode for in-place upgrades. Switching away from it requires a
+StatefulSet migration.
 
 To increase ClickHouse capacity for wide dataframe loads, override the local
 resource values before upgrading:
