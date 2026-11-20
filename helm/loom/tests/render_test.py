@@ -79,10 +79,11 @@ class LoomRenderTests(unittest.TestCase):
         self.assertEqual(volume(arango, "data")["persistentVolumeClaim"]["claimName"],
                          claim["metadata"]["name"])
         self.assertEqual(claim["spec"]["storageClassName"], "")
-        self.assertEqual(claim["spec"]["resources"]["requests"]["storage"], "10Gi")
+        self.assertEqual(claim["spec"]["resources"]["requests"]["storage"], "30Gi")
         clickhouse = resource(rendered, "StatefulSet", "clickhouse")
-        self.assertEqual(clickhouse["spec"]["volumeClaimTemplates"][0]["metadata"]["name"],
-                         "clickhouse-data")
+        claim_template = clickhouse["spec"]["volumeClaimTemplates"][0]
+        self.assertEqual(claim_template["metadata"]["name"], "clickhouse-data")
+        self.assertEqual(claim_template["spec"]["resources"]["requests"]["storage"], "6Gi")
 
     def test_databases_can_mount_existing_claims(self):
         rendered = resources(render(

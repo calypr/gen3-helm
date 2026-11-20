@@ -114,7 +114,7 @@ arango:
   noAuth: true
   persistence:
     enabled: false
-    size: 10Gi
+    size: 30Gi
     # Omit to use the default StorageClass. Set to "" for a classless PV.
     storageClass: null
     existingClaim: ""
@@ -127,7 +127,7 @@ clickstack:
     pullPolicy: IfNotPresent
   persistence:
     enabled: false
-    size: 2Gi
+    size: 6Gi
     storageClass: ""
     existingClaim: ""
   resources:
