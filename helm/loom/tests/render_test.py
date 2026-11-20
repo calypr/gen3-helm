@@ -102,5 +102,34 @@ class LoomRenderTests(unittest.TestCase):
         self.assertNotIn("volumeClaimTemplates", clickhouse["spec"])
 
 
+    def test_vm_storage_creates_prebound_retained_volumes(self):
+        rendered = resources(render("--set", "vmStorage.enabled=true", "--set", "vmStorage.nodeHostname=vm-test"))
+        for name, kind, mount, size, owner in (
+            ("arangodb", "Deployment", "data", "30Gi", "0:0"),
+            ("clickhouse", "StatefulSet", "clickhouse-data", "6Gi", "101:101"),
+        ):
+            with self.subTest(name=name):
+                pv_name = f"loom-{name}-pv"
+                claim_name = f"{name}-data"
+                pv = resource(rendered, "PersistentVolume", pv_name)["spec"]
+                claim = resource(rendered, "PersistentVolumeClaim", claim_name)["spec"]
+                workload = resource(rendered, kind, name)
+                self.assertEqual(pv["hostPath"], {
+                    "path": f"/srv/loom-data/{name}", "type": "DirectoryOrCreate",
+                })
+                self.assertEqual(pv["persistentVolumeReclaimPolicy"], "Retain")
+                self.assertEqual(pv["capacity"]["storage"], size)
+                self.assertEqual(pv["nodeAffinity"]["required"]["nodeSelectorTerms"][0]["matchExpressions"][0]["values"], ["vm-test"])
+                self.assertEqual(pv["claimRef"], {"namespace": "loom-test", "name": claim_name})
+                self.assertEqual(claim["volumeName"], pv_name)
+                self.assertEqual(claim["resources"]["requests"]["storage"], size)
+                self.assertEqual(volume(workload, mount)["persistentVolumeClaim"]["claimName"],
+                                 claim_name)
+                self.assertNotIn("volumeClaimTemplates", workload["spec"])
+                init = workload["spec"]["template"]["spec"]["initContainers"][0]
+                self.assertEqual(init["volumeMounts"], [{"name": mount, "mountPath": "/data"}])
+                self.assertIn(f"chown {owner} /data", init["args"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -48,6 +48,24 @@ loom:
       existingClaim: clickhouse-data
 ```
 
+For a single-node VM, the chart can manage the static storage with one setting.
+
+```yaml
+loom:
+  vmStorage:
+    enabled: true
+```
+
+VM mode discovers the single schedulable Linux node and stores data under
+`/srv/loom-data/arangodb` and `/srv/loom-data/clickhouse`. Set
+`vmStorage.nodeHostname` when rendering offline or targeting a multi-node cluster. Helm reuses matching claims
+and volumes when it can read them from the cluster. Otherwise, it creates
+pre-bound, retained volumes. Kubelet creates missing directories, and init
+containers set permissions on the mount roots. Use a connected Helm render
+(`--dry-run=server`) to preview reuse on a cluster with existing claims.
+The storage requests are binding capacities. Host directories share the
+VM filesystem's free space.
+
 On a cluster with dynamic provisioning, omit both `existingClaim` values to
 let the chart create the ArangoDB PVC and the ClickHouse StatefulSet create its
 claim. The chart retains its ArangoDB PVC when the release is uninstalled.

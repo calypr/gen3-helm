@@ -1,0 +1,99 @@
+{{- if .Values.vmStorage.enabled }}
+{{- $vm := .Values.vmStorage }}
+{{- $node := $vm.nodeHostname }}
+{{- if not $node }}
+{{- $nodes := lookup "v1" "Node" "" "" }}
+{{- $candidates := list }}
+{{- range $item := $nodes.items }}
+{{- $labels := $item.metadata.labels | default dict }}
+{{- if and (eq (get $labels "kubernetes.io/os") "linux") (not $item.spec.unschedulable) (get $labels "kubernetes.io/hostname") }}
+{{- $candidates = append $candidates (get $labels "kubernetes.io/hostname") }}
+{{- end }}
+{{- end }}
+{{- if ne (len $candidates) 1 }}
+{{- fail "vmStorage requires exactly one schedulable Linux node, or set vmStorage.nodeHostname explicitly for multi-node clusters and offline rendering" }}
+{{- end }}
+{{- $node = first $candidates }}
+{{- end }}
+{{- $volumes := list (dict "name" "arangodb" "path" $vm.arangoPath "size" .Values.arango.persistence.size) }}
+{{- if .Values.clickstack.enabled }}
+{{- $volumes = append $volumes (dict "name" "clickhouse" "path" $vm.clickhousePath "size" .Values.clickstack.persistence.size) }}
+{{- if or (eq $vm.arangoPath $vm.clickhousePath) (hasPrefix (printf "%s/" $vm.arangoPath) $vm.clickhousePath) (hasPrefix (printf "%s/" $vm.clickhousePath) $vm.arangoPath) }}{{- fail "ArangoDB and ClickHouse require distinct VM storage paths" }}{{- end }}
+{{- end }}
+{{- $affinity := dict "required" (dict "nodeSelectorTerms" (list (dict "matchExpressions" (list (dict "key" "kubernetes.io/hostname" "operator" "In" "values" (list $node)))))) }}
+{{- range $volume := $volumes }}
+{{- $claimName := printf "%s-data" $volume.name }}
+{{- $volumeName := printf "loom-%s-pv" $volume.name }}
+{{- if or (not (hasPrefix "/srv/" $volume.path)) (ne (clean $volume.path) $volume.path) (eq $volume.path "/srv/loom-data") }}
+{{- fail (printf "VM storage path for %s must be a dedicated clean path under /srv" $volume.name) }}
+{{- end }}
+{{- if eq $volume.name "arangodb" }}
+{{- $override := $.Values.arango.persistence.existingClaim }}
+{{- if and $override (ne $override $claimName) }}{{- fail (printf "vmStorage expects ArangoDB claim %s" $claimName) }}{{- end }}
+{{- else }}
+{{- $override := $.Values.clickstack.persistence.existingClaim }}
+{{- if and $override (ne $override $claimName) }}{{- fail (printf "vmStorage expects ClickHouse claim %s" $claimName) }}{{- end }}
+{{- end }}
+{{- $claim := lookup "v1" "PersistentVolumeClaim" $.Release.Namespace $claimName }}
+{{- $pv := lookup "v1" "PersistentVolume" "" $volumeName }}
+{{- if $claim }}
+{{- if or (ne (default "" $claim.spec.storageClassName) "") (ne $claim.spec.volumeName $volumeName) (ne $claim.spec.resources.requests.storage $volume.size) (not (has "ReadWriteOnce" $claim.spec.accessModes)) }}
+{{- fail (printf "PVC %s/%s conflicts with VM storage settings" $.Release.Namespace $claimName) }}
+{{- end }}
+{{- end }}
+{{- if $pv }}
+{{- $ref := $pv.spec.claimRef | default dict }}
+{{- $source := $pv.spec.local | default ($pv.spec.hostPath | default dict) }}
+{{- if or (ne $source.path $volume.path) (ne (default "" $pv.spec.storageClassName) "") (ne $pv.spec.capacity.storage $volume.size) (ne $pv.spec.persistentVolumeReclaimPolicy "Retain") (not (has "ReadWriteOnce" $pv.spec.accessModes)) (ne $ref.name $claimName) (ne $ref.namespace $.Release.Namespace) (not (deepEqual $pv.spec.nodeAffinity $affinity)) }}
+{{- fail (printf "PV %s conflicts with VM storage settings" $volumeName) }}
+{{- end }}
+{{- if and $ref.uid (or (not $claim) (ne $ref.uid $claim.metadata.uid)) }}
+{{- fail (printf "PV %s is reserved for a prior PVC UID and needs manual recovery" $volumeName) }}
+{{- end }}
+{{- end }}
+{{- if eq (include "loom.renderVMStorageObject" (dict "object" $pv "release" $.Release)) "true" }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $volumeName }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  capacity:
+    storage: {{ $volume.size | quote }}
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: {{ $.Release.Namespace }}
+    name: {{ $claimName }}
+  {{- if and $pv $pv.spec.local }}
+  local:
+    path: {{ $volume.path | quote }}
+  {{- else }}
+  hostPath:
+    path: {{ $volume.path | quote }}
+    type: DirectoryOrCreate
+  {{- end }}
+  nodeAffinity:
+    {{- toYaml $affinity | nindent 4 }}
+{{- end }}
+{{- if eq (include "loom.renderVMStorageObject" (dict "object" $claim "release" $.Release)) "true" }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $claimName }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: {{ $volumeName }}
+  resources:
+    requests:
+      storage: {{ $volume.size | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

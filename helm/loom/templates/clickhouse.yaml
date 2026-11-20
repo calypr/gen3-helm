@@ -1,4 +1,6 @@
 {{- $persistence := .Values.clickstack.persistence -}}
+{{- $vm := .Values.vmStorage.enabled -}}
+{{- $claimName := ternary "clickhouse-data" $persistence.existingClaim $vm -}}
 {{- if .Values.clickstack.enabled }}
 apiVersion: v1
 kind: Secret
@@ -63,6 +65,10 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: clickhouse
     spec:
+      {{- if $vm }}
+      initContainers:
+        {{- include "loom.vmStoragePermissions" (dict "image" (printf "%s:%s" .Values.clickstack.image.repository .Values.clickstack.image.tag) "owner" "101:101" "volume" "clickhouse-data") | nindent 8 }}
+      {{- end }}
       containers:
         - name: clickhouse
           image: "{{ .Values.clickstack.image.repository }}:{{ .Values.clickstack.image.tag }}"
@@ -96,15 +102,15 @@ spec:
         - name: clickhouse-users
           secret:
             secretName: clickhouse-users
-        {{- if and $persistence.enabled $persistence.existingClaim }}
+        {{- if or $vm (and $persistence.enabled $persistence.existingClaim) }}
         - name: clickhouse-data
           persistentVolumeClaim:
-            claimName: {{ $persistence.existingClaim | quote }}
+            claimName: {{ $claimName | quote }}
         {{- else if not $persistence.enabled }}
         - name: clickhouse-data
           emptyDir: {}
         {{- end }}
-  {{- if and $persistence.enabled (not $persistence.existingClaim) }}
+  {{- if and (not $vm) $persistence.enabled (not $persistence.existingClaim) }}
   volumeClaimTemplates:
     - metadata:
         name: clickhouse-data

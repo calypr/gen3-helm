@@ -106,6 +106,14 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+# Single-node VM storage. Existing claims are reused when they match these paths.
+vmStorage:
+  enabled: false
+  # Leave empty to discover the single schedulable Linux node.
+  nodeHostname: ""
+  arangoPath: /srv/loom-data/arangodb
+  clickhousePath: /srv/loom-data/clickhouse
+
 arango:
   image:
     repository: arangodb

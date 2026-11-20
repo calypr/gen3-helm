@@ -1,5 +1,7 @@
 {{- $persistence := .Values.arango.persistence -}}
 {{- $claimName := $persistence.existingClaim | default (printf "%s-arango-data" (include "loom.fullname" .)) -}}
+{{- $vm := .Values.vmStorage.enabled -}}
+{{- if $vm }}{{- $claimName = "arangodb-data" -}}{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +11,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: 1
-  {{- if $persistence.enabled }}
+  {{- if or $vm $persistence.enabled }}
   strategy:
     type: Recreate
     rollingUpdate: null
@@ -24,6 +26,10 @@ spec:
         app.kubernetes.io/name: arangodb
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if $vm }}
+      initContainers:
+        {{- include "loom.vmStoragePermissions" (dict "image" (include "loom.arangoImage" .) "owner" "0:0" "volume" "data") | nindent 8 }}
+      {{- end }}
       containers:
         - name: arangodb
           image: {{ include "loom.arangoImage" . | quote }}
@@ -39,13 +45,13 @@ spec:
               mountPath: /var/lib/arangodb3
       volumes:
         - name: data
-          {{- if $persistence.enabled }}
+          {{- if or $vm $persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ $claimName | quote }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-{{- if and $persistence.enabled (not $persistence.existingClaim) }}
+{{- if and (not $vm) $persistence.enabled (not $persistence.existingClaim) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
