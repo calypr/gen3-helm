@@ -68,7 +68,7 @@ func TestExecutorCredentialsRemainLiteral(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	configured, err := injectExecutorEnvironment("env:\n  # CALYPR_ETL_ENV", accessToken, githubToken, string(input), "http://loom:8080", "http://syfon:8080")
+	configured, err := injectExecutorEnvironment("env:\n  # CALYPR_ETL_ENV", accessToken, githubToken, string(input), "http://loom:8080", "http://syfon:8080", "http://gecko:8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,8 @@ func TestExecutorCredentialsRemainLiteral(t *testing.T) {
 	for name, want := range map[string]string{
 		"ACCESS_TOKEN": accessToken, "GITHUB_TOKEN": githubToken,
 		"INPUT_DATA": string(input), "LOOM_URL": "http://loom:8080",
-		"DRS_URL": "http://syfon:8080", "ETL_OPERATION_ID": "task-123",
+		"DRS_URL": "http://syfon:8080", "GECKO_URL": "http://gecko:8080",
+		"ETL_OPERATION_ID":  "task-123",
 		"ETL_WORKSPACE_DIR": "/workspace",
 	} {
 		if values[name] != want {

@@ -151,7 +151,7 @@ func (a *Authorizer) PluginAction(params map[string]string, headers map[string]*
 		return response(500, "Could not prepare the publish task", effective, nil), nil
 	}
 
-	injected, err := injectExecutorEnvironment(conf.Kubernetes.ExecutorTemplate, accessToken, githubToken, string(inputJSON), settings.loomURL, settings.drsURL)
+	injected, err := injectExecutorEnvironment(conf.Kubernetes.ExecutorTemplate, accessToken, githubToken, string(inputJSON), settings.loomURL, settings.drsURL, settings.geckoURL)
 	if err != nil {
 		return response(500, "Could not configure the publish executor", effective, nil), nil
 	}
@@ -480,7 +480,7 @@ func upstreamStatus(status int) int64 {
 	return http.StatusBadGateway
 }
 
-func injectExecutorEnvironment(template, accessToken, githubToken, inputJSON, loomURL, drsURL string) (string, error) {
+func injectExecutorEnvironment(template, accessToken, githubToken, inputJSON, loomURL, drsURL, geckoURL string) (string, error) {
 	lines := strings.Split(template, "\n")
 	markerLine := -1
 	indent := ""
@@ -512,6 +512,12 @@ func injectExecutorEnvironment(template, accessToken, githubToken, inputJSON, lo
 		"  value: /workspace",
 		"- name: ETL_OPERATION_ID",
 		"  value: {{printf \"%q\" .TaskId}}",
+	}
+	if geckoURL != "" {
+		entries = append(entries,
+			"- name: GECKO_URL",
+			"  value: {{printf \"%q\" "+strconv.Quote(geckoURL)+"}}",
+		)
 	}
 	for i := range entries {
 		entries[i] = indent + entries[i]

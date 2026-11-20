@@ -82,7 +82,7 @@ func createDataframeTask(params map[string]string, headers map[string]*funnelplu
 	if err != nil {
 		return response(http.StatusInternalServerError, "Could not prepare the dataframe publish task", effective, nil)
 	}
-	template, err := injectExecutorEnvironment(effective.Kubernetes.ExecutorTemplate, accessToken, "", string(input), settings.loomURL, settings.drsURL)
+	template, err := injectExecutorEnvironment(effective.Kubernetes.ExecutorTemplate, accessToken, "", string(input), settings.loomURL, settings.drsURL, "")
 	if err != nil {
 		return response(http.StatusInternalServerError, "Could not configure the dataframe publish executor", effective, nil)
 	}
