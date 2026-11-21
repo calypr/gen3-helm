@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-worker-config-{{`{{.TaskId}}`}}
+  namespace: {{`{{.Namespace}}`}}
+data:
+  funnel-worker.yaml: {{`{{printf "%q" .Config}}`}}

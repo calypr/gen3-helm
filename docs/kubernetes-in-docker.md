@@ -95,16 +95,6 @@ fence:
         client_id: "<from previous step>"
         client_secret: "<from previous step>"
 
-# Use a prebuilt portal image if you're deploying to a laptop, less resources consumed by gen3
-portal:
-  resources:
-    requests:
-      cpu: "0.2"
-      memory: 100Mi
-  image:
-    repository: quay.io/cdis/data-portal-prebuilt
-    tag: dev
-
 ```
 
 ## deploy gen3

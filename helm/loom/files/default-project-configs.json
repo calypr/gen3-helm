@@ -1,0 +1,275 @@
+{
+  "apiVersion": "loom.calypr.org/project-configs/v1",
+  "kind": "ProjectConfigs",
+  "configs": [
+    {
+      "id": "default",
+      "title": "Metadata",
+      "recipeRef": {
+        "name": "calypr-meta-default"
+      },
+      "views": [
+        {
+          "id": "documents",
+          "title": "Files",
+          "output": "DocumentReference",
+          "table": {
+            "columns": [
+              {
+                "column": "document_reference_id",
+                "label": "ID",
+                "visible": true
+              },
+              {
+                "column": "document_reference_title",
+                "label": "Title",
+                "visible": true
+              },
+              {
+                "column": "document_reference_status",
+                "label": "Status",
+                "visible": true
+              },
+              {
+                "column": "document_reference_contentType",
+                "label": "Content type",
+                "visible": true
+              },
+              {
+                "column": "document_reference_url",
+                "label": "URL",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "document_reference_status",
+              "label": "Status"
+            },
+            {
+              "column": "document_reference_contentType",
+              "label": "Content type"
+            }
+          ],
+          "charts": [
+            {
+              "column": "document_reference_status",
+              "type": "pie",
+              "title": "Files by status"
+            }
+          ]
+        },
+        {
+          "id": "research-subjects",
+          "title": "Research subjects",
+          "output": "ResearchSubject",
+          "table": {
+            "columns": [
+              {
+                "column": "research_subject_id",
+                "label": "ID",
+                "visible": true
+              },
+              {
+                "column": "research_subject_identifier",
+                "label": "Identifier",
+                "visible": true
+              },
+              {
+                "column": "research_subject_status",
+                "label": "Status",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "research_subject_status",
+              "label": "Status"
+            }
+          ],
+          "charts": [
+            {
+              "column": "research_subject_status",
+              "type": "pie",
+              "title": "Enrollments by status"
+            }
+          ]
+        },
+        {
+          "id": "medication-administrations",
+          "title": "Medication administrations",
+          "output": "MedicationAdministration",
+          "table": {
+            "columns": [
+              {
+                "column": "medication_administration_id",
+                "label": "ID",
+                "visible": true
+              },
+              {
+                "column": "medication_administration_status",
+                "label": "Status",
+                "visible": true
+              },
+              {
+                "column": "medication_administration_total_dosage",
+                "label": "Total dosage",
+                "visible": true
+              },
+              {
+                "column": "patient__patient_id",
+                "label": "Patient ID",
+                "visible": true
+              },
+              {
+                "column": "patient__patient_identifier",
+                "label": "Patient identifier",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "medication_administration_status",
+              "label": "Status"
+            }
+          ],
+          "charts": [
+            {
+              "column": "medication_administration_status",
+              "type": "pie",
+              "title": "Administrations by status"
+            }
+          ]
+        },
+        {
+          "id": "specimens",
+          "title": "Specimens",
+          "output": "Specimen",
+          "table": {
+            "columns": [
+              {
+                "column": "specimen_id",
+                "label": "ID",
+                "visible": true
+              },
+              {
+                "column": "specimen_identifier",
+                "label": "Identifier",
+                "visible": true
+              },
+              {
+                "column": "specimen_parent",
+                "label": "Parent",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "specimen_parent",
+              "label": "Parent"
+            }
+          ],
+          "charts": [
+            {
+              "column": "specimen_parent",
+              "type": "pie",
+              "title": "Specimens by parent"
+            }
+          ]
+        },
+        {
+          "id": "group-members",
+          "title": "Group members",
+          "output": "GroupMember",
+          "table": {
+            "columns": [
+              {
+                "column": "group_id",
+                "label": "Group ID",
+                "visible": true
+              },
+              {
+                "column": "group_member_id",
+                "label": "Member ID",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "group_id",
+              "label": "Group ID"
+            }
+          ],
+          "charts": [
+            {
+              "column": "group_id",
+              "type": "pie",
+              "title": "Group members by group"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "title": "Files",
+      "recipeRef": {
+        "name": "calypr-meta-default"
+      },
+      "views": [
+        {
+          "id": "files",
+          "title": "Files",
+          "output": "DocumentReference",
+          "table": {
+            "columns": [
+              {
+                "column": "document_reference_id",
+                "label": "ID",
+                "visible": true
+              },
+              {
+                "column": "document_reference_title",
+                "label": "Title",
+                "visible": true
+              },
+              {
+                "column": "document_reference_contentType",
+                "label": "Content type",
+                "visible": true
+              },
+              {
+                "column": "document_reference_url",
+                "label": "URL",
+                "visible": true
+              },
+              {
+                "column": "document_reference_size",
+                "label": "Size",
+                "visible": true
+              }
+            ]
+          },
+          "filters": [
+            {
+              "column": "document_reference_contentType",
+              "label": "Content type"
+            }
+          ],
+          "charts": [
+            {
+              "column": "document_reference_contentType",
+              "type": "pie",
+              "title": "Files by content type"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

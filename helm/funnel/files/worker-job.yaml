@@ -46,6 +46,11 @@ spec:
       {{- end }}
       `}}
 
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{ toYaml . | indent 8 }}
+      {{- end }}
+
       # Tolerations
       # https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
       {{`
@@ -61,24 +66,21 @@ spec:
       {{- end }}
       `}}
 
-      # SecurityContext
-      # https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
-      {{`
-      {{- if .securityContext }}
       securityContext:
-        fsGroup: {{ .securityContext.fsGroup }}
-        runAsUser: {{ .securityContext.runAsUser }}
-        runAsGroup: {{ .securityContext.runAsGroup }}
-        supplementalGroups: {{ .securityContext.supplementalGroups }}
-      {{- end }}
-      `}}
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
 
-      serviceAccountName: {{`{{.ServiceAccountName}}`}}
+      serviceAccountName: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) | quote }}
+      automountServiceAccountToken: true
       restartPolicy: {{ .Values.Kubernetes.Worker.restartPolicy }}
       containers:
-      - name: funnel-worker-{{`{{.TaskId}}`}}
+      - name: funnel-worker
         image: {{`{{.Image}}`}}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
         - /bin/sh
         - -c
@@ -97,21 +99,7 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/config
-        {{`
-        {{- if .NeedsPVC }}
-        - name: funnel-storage-{{.TaskId}}
-          mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
-          subPath: {{.TaskId}}
-        {{- end }}
-        `}}
       volumes:
       - name: config-volume
         configMap:
           name: funnel-worker-config-{{`{{.TaskId}}`}}
-      {{`
-      {{- if .NeedsPVC }}
-      - name: funnel-storage-{{.TaskId}}
-        persistentVolumeClaim:
-          claimName: funnel-worker-pvc-{{.TaskId}}
-      {{- end }}
-      `}}

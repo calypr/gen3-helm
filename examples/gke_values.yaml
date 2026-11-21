@@ -1,5 +1,5 @@
 global:
-  # to disable local es/postgre
+  # to disable local PostgreSQL
   dev: false
   hostname: qureshi.planx-pla.net
   esEndpoint: ""

@@ -1,0 +1,21 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: funnel-rolebinding-{{ .Release.Namespace }}
+  namespace: {{ .Values.Kubernetes.JobsNamespace | default .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) }}
+    namespace: {{ .Release.Namespace }}
+  {{- $jobsNamespace := .Values.Kubernetes.JobsNamespace | default .Release.Namespace }}
+  {{- if ne $jobsNamespace .Release.Namespace }}
+  - kind: ServiceAccount
+    name: {{ .Values.Kubernetes.ServiceAccount | default (printf "funnel-sa-%s" .Release.Namespace) }}
+    namespace: {{ $jobsNamespace }}
+  {{- end }}
+roleRef:
+  kind: Role
+  name: funnel-role-{{ .Release.Namespace }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

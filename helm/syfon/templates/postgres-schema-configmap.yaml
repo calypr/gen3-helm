@@ -2,18 +2,46 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "syfon.fullname" . }}-postgres-schema
+  name: {{ printf "%s-postgres-schema-%d" (include "syfon.fullname" . | trunc 36 | trimSuffix "-") .Release.Revision }}
   labels:
     {{- include "syfon.labels" . | nindent 4 }}
 data:
   drs_schema.sql: |
+    \set ON_ERROR_STOP on
+
+    BEGIN;
+    SELECT pg_advisory_xact_lock(hashtextextended('syfon-schema-migrations', 0));
+    CREATE TABLE IF NOT EXISTS syfon_schema_migrations (
+      version BIGINT PRIMARY KEY,
+      name TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    DO $guard$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM syfon_schema_migrations
+        WHERE (version = 1 AND (name <> 'baseline' OR checksum <> '73f4fb5eb6ac3e695be61e19d88b60b63d21ccf02e5476c5f6b5f92fb35797ac'))
+           OR (version = 2 AND (name <> 'access-method-url-object-index' OR checksum <> 'd653e7d57d6fd4e2bb80df73b34f1565d4a781bd8eb6db76a162a9b486d449f1'))
+           OR (version = 3 AND (name <> 'multipart-completion-receipt' OR checksum <> '3339e1c97b156d3e761e606e6b19ff20d6d52f41962fff4f11a7befbd4f55e07'))
+           OR version > 3
+      ) THEN
+        RAISE EXCEPTION 'database schema migration history is incompatible with this Syfon release';
+      END IF;
+    END
+    $guard$;
+    COMMIT;
+
+    BEGIN;
+    SELECT pg_advisory_xact_lock(hashtextextended('syfon-schema-migrations', 0));
+    SELECT NOT EXISTS (SELECT 1 FROM syfon_schema_migrations WHERE version = 1) AS apply_migration \gset
+    \if :apply_migration
     CREATE TABLE IF NOT EXISTS drs_object (
       id TEXT PRIMARY KEY,
       size BIGINT,
       created_time TIMESTAMPTZ,
       updated_time TIMESTAMPTZ,
       name TEXT,
-      file_name TEXT,
       version TEXT,
       description TEXT
     );
@@ -22,8 +50,7 @@ data:
       object_id TEXT NOT NULL,
       url TEXT NOT NULL,
       type TEXT NOT NULL,
-      org TEXT NOT NULL DEFAULT '',
-      project TEXT NOT NULL DEFAULT '',
+      access_method_json TEXT,
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
@@ -46,24 +73,21 @@ data:
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
-    ALTER TABLE drs_object
-      ADD COLUMN IF NOT EXISTS file_name TEXT;
+    ALTER TABLE drs_object_access_method
+      ADD COLUMN IF NOT EXISTS access_method_json TEXT;
 
-    CREATE TABLE IF NOT EXISTS drs_object_browse_index (
+    CREATE TABLE IF NOT EXISTS drs_object_name_alias (
       object_id TEXT NOT NULL,
-      resource TEXT NOT NULL,
-      normalized_path TEXT NOT NULL,
-      parent_path TEXT NOT NULL,
-      entry_name TEXT NOT NULL,
-      PRIMARY KEY (resource, object_id),
+      name_alias TEXT NOT NULL,
+      PRIMARY KEY (object_id, name_alias),
       FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
     );
 
-    ALTER TABLE drs_object_access_method
-      ADD COLUMN IF NOT EXISTS org TEXT NOT NULL DEFAULT '';
-
-    ALTER TABLE drs_object_access_method
-      ADD COLUMN IF NOT EXISTS project TEXT NOT NULL DEFAULT '';
+    CREATE TABLE IF NOT EXISTS drs_object_read_policy (
+      object_id TEXT PRIMARY KEY,
+      public_read BOOLEAN NOT NULL DEFAULT FALSE,
+      FOREIGN KEY(object_id) REFERENCES drs_object(id) ON DELETE CASCADE
+    );
 
     CREATE TABLE IF NOT EXISTS s3_credential (
       credential_id TEXT PRIMARY KEY,
@@ -96,6 +120,26 @@ data:
 
     CREATE INDEX IF NOT EXISTS idx_s3_credential_bucket
       ON s3_credential(bucket);
+
+    CREATE OR REPLACE FUNCTION enforce_s3_credential_unique_bucket()
+    RETURNS trigger AS $function$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM s3_credential
+        WHERE bucket = NEW.bucket AND credential_id <> NEW.credential_id
+      ) THEN
+        RAISE EXCEPTION 'physical bucket "%" is already configured under another credential', NEW.bucket;
+      END IF;
+      RETURN NEW;
+    END;
+    $function$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS s3_credential_unique_bucket_trigger ON s3_credential;
+
+    CREATE TRIGGER s3_credential_unique_bucket_trigger
+    BEFORE INSERT OR UPDATE OF bucket, credential_id ON s3_credential
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_s3_credential_unique_bucket();
 
     CREATE TABLE IF NOT EXISTS bucket_scope (
       organization TEXT NOT NULL,
@@ -134,6 +178,41 @@ data:
       candidate_json JSONB NOT NULL,
       created_time TIMESTAMPTZ NOT NULL,
       expires_time TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS multipart_upload_session (
+      upload_id TEXT PRIMARY KEY,
+      completion_id TEXT NOT NULL DEFAULT '',
+      target_json TEXT NOT NULL,
+      authorization_json TEXT NOT NULL,
+      state TEXT NOT NULL CHECK (state IN ('active','completing','completed')),
+      completion_token TEXT NOT NULL DEFAULT '',
+      parts_fingerprint TEXT NOT NULL DEFAULT '',
+      completed_location TEXT NOT NULL DEFAULT '',
+      created_time TIMESTAMPTZ NOT NULL,
+      updated_time TIMESTAMPTZ NOT NULL,
+      operation TEXT NOT NULL DEFAULT '',
+      completion_parts_json TEXT NOT NULL DEFAULT ''
+    );
+
+    ALTER TABLE multipart_upload_session
+      ADD COLUMN IF NOT EXISTS completion_id TEXT NOT NULL DEFAULT '';
+
+    ALTER TABLE multipart_upload_session
+      ADD COLUMN IF NOT EXISTS parts_fingerprint TEXT NOT NULL DEFAULT '';
+
+    ALTER TABLE multipart_upload_session
+      ADD COLUMN IF NOT EXISTS operation TEXT NOT NULL DEFAULT '';
+
+    ALTER TABLE multipart_upload_session
+      ADD COLUMN IF NOT EXISTS completion_parts_json TEXT NOT NULL DEFAULT '';
+
+    CREATE TABLE IF NOT EXISTS multipart_completion_receipt (
+      upload_id TEXT PRIMARY KEY,
+      authorization_json JSONB NOT NULL,
+      parts_fingerprint TEXT NOT NULL,
+      completed_location TEXT NOT NULL,
+      completed_time TIMESTAMPTZ NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS object_usage (
@@ -265,6 +344,16 @@ data:
     CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_idx
       ON drs_object_checksum(checksum);
 
+    CREATE INDEX IF NOT EXISTS drs_object_checksum_checksum_type_object_id_idx
+      ON drs_object_checksum(checksum, type, object_id);
+
+    CREATE INDEX IF NOT EXISTS drs_object_checksum_sha256_identity_idx
+      ON drs_object_checksum(
+        (replace(lower(trim(type)), '-', '')),
+        (replace(lower(trim(checksum)), 'sha256:', '')),
+        object_id
+      );
+
     CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_idx
       ON drs_object_controlled_access(object_id);
 
@@ -277,20 +366,11 @@ data:
     CREATE INDEX IF NOT EXISTS drs_object_controlled_access_object_id_resource_idx
       ON drs_object_controlled_access(object_id, resource);
 
-    CREATE INDEX IF NOT EXISTS drs_object_access_method_scope_idx
-      ON drs_object_access_method(org, project);
-
     CREATE INDEX IF NOT EXISTS drs_object_alias_object_id_idx
       ON drs_object_alias(object_id);
 
-    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_object_id_idx
-      ON drs_object_browse_index(resource, parent_path, object_id);
-
-    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_parent_entry_name_idx
-      ON drs_object_browse_index(resource, parent_path, entry_name);
-
-    CREATE INDEX IF NOT EXISTS drs_object_browse_index_resource_normalized_path_idx
-      ON drs_object_browse_index(resource, normalized_path);
+    CREATE INDEX IF NOT EXISTS drs_object_name_alias_object_id_idx
+      ON drs_object_name_alias(object_id);
 
     CREATE INDEX IF NOT EXISTS idx_bucket_scope_bucket
       ON bucket_scope(bucket);
@@ -301,8 +381,14 @@ data:
     CREATE INDEX IF NOT EXISTS idx_lfs_pending_metadata_created
       ON lfs_pending_metadata(created_time);
 
+    CREATE INDEX IF NOT EXISTS idx_multipart_upload_session_state_updated
+      ON multipart_upload_session(state, updated_time);
+
     CREATE INDEX IF NOT EXISTS idx_object_usage_last_download_time
       ON object_usage(last_download_time);
+
+    CREATE INDEX IF NOT EXISTS idx_object_usage_last_download_time_object_id
+      ON object_usage(last_download_time, object_id);
 
     CREATE INDEX IF NOT EXISTS idx_object_usage_last_upload_time
       ON object_usage(last_upload_time);
@@ -315,6 +401,9 @@ data:
 
     CREATE INDEX IF NOT EXISTS idx_transfer_attr_scope_time
       ON transfer_attribution_event(organization, project, event_type, event_time);
+
+    CREATE INDEX IF NOT EXISTS idx_transfer_attr_scope_event_time
+      ON transfer_attribution_event(organization, project, event_time);
 
     CREATE INDEX IF NOT EXISTS idx_transfer_attr_direction_time
       ON transfer_attribution_event(direction, event_time);
@@ -343,41 +432,6 @@ data:
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_scope_time
       ON provider_transfer_event(organization, project, direction, event_time);
 
-    INSERT INTO drs_object_browse_index (object_id, resource, normalized_path, parent_path, entry_name)
-    SELECT
-      scoped.object_id,
-      scoped.resource,
-      scoped.normalized_path,
-      CASE
-        WHEN position('/' in scoped.normalized_path) = 0 THEN ''
-        ELSE regexp_replace(scoped.normalized_path, '/[^/]+$', '')
-      END AS parent_path,
-      regexp_replace(scoped.normalized_path, '^.*/', '') AS entry_name
-    FROM (
-      SELECT
-        ca.object_id,
-        ca.resource,
-        regexp_replace(
-          regexp_replace(
-            btrim(replace(COALESCE(o.file_name, o.name, ''), E'\\', '/'), '/'),
-            '/+',
-            '/',
-            'g'
-          ),
-          '^/+|/+$',
-          '',
-          'g'
-        ) AS normalized_path
-      FROM drs_object_controlled_access ca
-      INNER JOIN drs_object o ON o.id = ca.object_id
-    ) scoped
-    WHERE scoped.normalized_path <> ''
-      AND scoped.normalized_path !~ '(^|/)\.\.?(/|$)'
-    ON CONFLICT (resource, object_id) DO UPDATE SET
-      normalized_path = EXCLUDED.normalized_path,
-      parent_path = EXCLUDED.parent_path,
-      entry_name = EXCLUDED.entry_name;
-
     CREATE INDEX IF NOT EXISTS idx_provider_transfer_actor_time
       ON provider_transfer_event(actor_email, actor_subject, event_time);
 
@@ -398,4 +452,109 @@ data:
 
     CREATE INDEX IF NOT EXISTS idx_provider_sync_scope_time
       ON provider_transfer_sync_run(organization, project, requested_at);
+
+    WITH normalized AS (
+      SELECT
+        event_id,
+        encode(sha256(
+          convert_to(COALESCE(object_id, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(CASE
+            WHEN lower(btrim(sha256)) ~ '^(sha256:)?[0-9a-f]{64}$'
+              THEN regexp_replace(lower(btrim(sha256)), '^sha256:', '')
+            ELSE btrim(sha256)
+          END, 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(organization, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(project, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(access_id, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(provider, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(bucket, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(storage_url, ''), 'UTF8')
+        ), 'hex') AS grant_id
+      FROM transfer_attribution_event
+      WHERE event_type = 'access_issued'
+    )
+    UPDATE transfer_attribution_event AS event
+    SET access_grant_id = normalized.grant_id
+    FROM normalized
+    WHERE event.event_id = normalized.event_id
+      AND event.access_grant_id IS DISTINCT FROM normalized.grant_id;
+
+    WITH normalized AS (
+      SELECT
+        encode(sha256(
+          convert_to(COALESCE(object_id, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(CASE
+            WHEN lower(btrim(sha256)) ~ '^(sha256:)?[0-9a-f]{64}$'
+              THEN regexp_replace(lower(btrim(sha256)), '^sha256:', '')
+            ELSE btrim(sha256)
+          END, 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(organization, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(project, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(access_id, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(provider, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(bucket, ''), 'UTF8') || decode('00', 'hex') ||
+          convert_to(COALESCE(storage_url, ''), 'UTF8')
+        ), 'hex') AS grant_id,
+        event_time, object_id, sha256, object_size, organization, project,
+        access_id, provider, bucket, storage_url, actor_email, actor_subject, auth_mode
+      FROM transfer_attribution_event
+      WHERE event_type = 'access_issued'
+    )
+    INSERT INTO access_grant (
+      access_grant_id, first_issued_at, last_issued_at, issue_count,
+      object_id, sha256, object_size, organization, project, access_id,
+      provider, bucket, storage_url, actor_email, actor_subject, auth_mode
+    )
+    SELECT
+      grant_id,
+      min(event_time),
+      max(event_time),
+      count(*),
+      min(object_id),
+      min(sha256),
+      max(object_size),
+      min(organization),
+      min(project),
+      min(access_id),
+      min(provider),
+      min(bucket),
+      min(storage_url),
+      COALESCE(min(NULLIF(actor_email, '')), ''),
+      COALESCE(min(NULLIF(actor_subject, '')), ''),
+      COALESCE(min(NULLIF(auth_mode, '')), '')
+    FROM normalized
+    GROUP BY grant_id
+    ON CONFLICT (access_grant_id) DO NOTHING;
+
+    INSERT INTO syfon_schema_migrations (version, name, checksum)
+    VALUES (1, 'baseline', '73f4fb5eb6ac3e695be61e19d88b60b63d21ccf02e5476c5f6b5f92fb35797ac');
+    \endif
+    COMMIT;
+
+    BEGIN;
+    SELECT pg_advisory_xact_lock(hashtextextended('syfon-schema-migrations', 0));
+    SELECT NOT EXISTS (SELECT 1 FROM syfon_schema_migrations WHERE version = 2) AS apply_migration \gset
+    \if :apply_migration
+    CREATE INDEX IF NOT EXISTS drs_object_access_method_url_object_id_idx
+      ON drs_object_access_method(url, object_id);
+    INSERT INTO syfon_schema_migrations (version, name, checksum)
+    VALUES (2, 'access-method-url-object-index', 'd653e7d57d6fd4e2bb80df73b34f1565d4a781bd8eb6db76a162a9b486d449f1');
+    \endif
+    COMMIT;
+
+    BEGIN;
+    SELECT pg_advisory_xact_lock(hashtextextended('syfon-schema-migrations', 0));
+    SELECT NOT EXISTS (SELECT 1 FROM syfon_schema_migrations WHERE version = 3) AS apply_migration \gset
+    \if :apply_migration
+    CREATE TABLE IF NOT EXISTS multipart_completion_receipt (
+      upload_id TEXT PRIMARY KEY,
+      authorization_json JSONB NOT NULL,
+      parts_fingerprint TEXT NOT NULL,
+      completed_location TEXT NOT NULL,
+      completed_time TIMESTAMPTZ NOT NULL
+    );
+    INSERT INTO syfon_schema_migrations (version, name, checksum)
+    VALUES (3, 'multipart-completion-receipt', '3339e1c97b156d3e761e606e6b19ff20d6d52f41962fff4f11a7befbd4f55e07');
+    \endif
+    COMMIT;
 {{- end }}

@@ -23,6 +23,20 @@ spec:
         app: funnel-executor
         job-name: {{`{{.TaskId}}`}}-{{`{{.JobId}}`}}
     spec:
+
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: funnel-worker
+                  task-id: {{`{{.TaskId}}`}}
+              topologyKey: kubernetes.io/hostname
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{ toYaml . | indent 8 }}
+      {{- end }}
     
     # If priorityClassName is set for the Executor, use that. 
     # Otherwise, if it's set for the Worker, use that. 
@@ -66,6 +80,10 @@ spec:
       `}}
 
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
         # Use the default seccomp profile, which should block several dangerous syscalls that could be used for privilege escalation or container escape
         seccompProfile:
           type: RuntimeDefault
@@ -75,9 +93,9 @@ spec:
       restartPolicy: {{ .Values.Kubernetes.Executor.restartPolicy }}
       serviceAccountName: {{`{{.ServiceAccountName}}`}}
       containers:
-      - name: funnel-executor-{{`{{.TaskId}}`}}
+      - name: funnel-executor
         image: {{`{{.Image}}`}}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         securityContext:
           # Block the ability to gain more privileges
           allowPrivilegeEscalation: false
@@ -86,7 +104,6 @@ spec:
           # Block all capabilities and then add back only the ones we need
           capabilities:
             drop: ["ALL"]
-            add: ["CHOWN", "DAC_OVERRIDE", "SETUID", "SETGID"]
         # Command
         {{`
         {{- if .UseShell}}
@@ -112,6 +129,7 @@ spec:
           value: "{{ $value }}"
         {{- end }}
         `}}
+        # CALYPR_ETL_ENV
         
         resources:
           requests:
@@ -122,23 +140,3 @@ spec:
             cpu: {{`{{ .CpusLimit }}`}}
             memory: {{`{{ .RamGbLimit }}`}}Gi
             ephemeral-storage: {{`{{ .DiskGbLimit }}`}}Gi
-
-        volumeMounts:
-        {{`
-        {{- if .NeedsPVC }}
-          {{- range $idx, $item := .Volumes}}
-          - name: funnel-storage-{{$.TaskId}}
-            mountPath: {{$item.ContainerPath}}
-            subPath: {{$.TaskId}}{{$item.ContainerPath}}
-          {{- end}}
-        {{- end }}
-        `}}
-
-      volumes:
-      {{`
-      {{- if .NeedsPVC }}
-      - name: funnel-storage-{{.TaskId}}
-        persistentVolumeClaim:
-          claimName: funnel-worker-pvc-{{.TaskId}}
-      {{- end }}
-      `}}
